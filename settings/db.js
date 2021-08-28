@@ -3,6 +3,8 @@ const env = require('./../dbenv')
 
 const db = mysql.createConnection({
     host:env.HOST,
+    socketPath: env.SOCKET,
+    port: env.PORT,
     user: env.DB_USER,
     password: env.DB_PASSWORD,
     database: env.DB_NAME
