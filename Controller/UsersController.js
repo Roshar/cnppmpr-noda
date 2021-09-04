@@ -1,9 +1,10 @@
 'use strict'
+const response = require('./../response')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const response = require('./../response')
 const db = require('./../settings/db')
 const config = require('./../dbenv')
+const {body, validationResult} = require('express-validator')
 
 exports.getAllUsers = (req, res) => {
     db.query('SELECT * FROM `users`', (error,rows) => {
@@ -45,29 +46,36 @@ exports.signup = (req, res) => {
 exports.singin = (req, res) => {
     const {login, password} = req.body
 
-    const sql = `select id, login, password from users where login = "${login}"`;
-    db.query(sql,(error, rows) => {
-        console.log(rows[0].password)
-        if(error){
-            response.status(400, error, res)
+    const sql = `select id, login, password, role, status from users where login = "${login}"`;
+    db.query(sql,(err, rows) => {
+        if(err){
+            response.status(400, {message:'sdsdsdsd'}, res)
         } else if(rows.length <= 0) {
-            response.status(401, {message: `Пользователь с таким email ${login} не найден!`})
+            response.status(401, {message: `Пользователь с таким email ${login} не найден!`},res)
+            return false
         } else {
-            const passwordTrue = bcrypt.compareSync(password, rows[0].password)
-            console.log(passwordTrue)
-
-            if(passwordTrue) {
-                //генерируем токен
-                const token = jwt.sign({
-                    userId: rows.id,
-                    login: rows.login
-                },config.jwt, {
-                    expiresIn: 120 * 120
-                })
-                response.status(200, {token: `Bearer ${token}`},res)
-            }else{
-                response.status(401, {message:`Пароль не верный.`},res)
-            }
+           if(rows[0].password){
+               const passwordTrue = bcrypt.compareSync(password, rows[0].password)
+               console.log(passwordTrue)
+               if(passwordTrue) {
+                   //генерируем токен
+                   const token = jwt.sign({
+                       userId: rows.id,
+                       login: rows.login,
+                       role: rows.role,
+                       status: rows.status,
+                   },config.jwt, {
+                       expiresIn: 120 * 120
+                   })
+                   response.status(200,
+                       {token: `${token}`,
+                              login: rows[0].login,
+                              role: rows[0].role,
+                              status: rows[0].status},res)
+               }else{
+                   response.status(401, {message:`Пароль не верный.`},res)
+               }
+           }
         return true
         }
     })
