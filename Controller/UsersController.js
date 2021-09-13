@@ -144,11 +144,11 @@ exports.singin = async (req, res) => {
 
 exports.logout = async (req, res) => {
     try{
-        const {login} = req.body
-        const sql = "DELETE FROM `authorization` WHERE login " + login
+        const token = req.body.token
+        const sql = 'DELETE FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
         const obj = new DB()
         const rows = await obj.create(sql)
-
+        response.status(200, {"result":rows}, res)
     } catch (e) {
         console.log("Ошибка при выходе")
     }
@@ -156,11 +156,14 @@ exports.logout = async (req, res) => {
 
 exports.getRole = async (req, res) => {
     try{
-        const {login} = req.body
-        const sql = `SELECT role FROM users WHERE login = "${login}"`
+        const token = req.body.token
+        const sql = 'SELECT role FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
+
         const obj = new DB()
         const rows = await obj.create(sql)
-        if(rows.length) {
+        // console.log(rows)
+        // return false
+        if(rows) {
             response.status(200,{role: rows[0].role}, res)
         }else {
             response.status(401, {}, res)
