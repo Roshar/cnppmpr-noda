@@ -1,12 +1,14 @@
 const jwtStrategy = require('passport-jwt').Strategy
 const ExtractJwt = require('passport-jwt').ExtractJwt
-const db = require('./../settings/db')
+const db = require('./../settings/syncdb')
 const config = require('./../dbenv')
+
 
 var options = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: config.jwt
 }
+
 
 module.exports = passport => {
     passport.use(

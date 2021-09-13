@@ -1,7 +1,6 @@
 
 const mysql = require('mysql2/promise');
 const env = require('./../dbenv')
-const response = require('./../response')
 
 class DB {
     async create(sql,parameters=[]) {
@@ -14,7 +13,7 @@ class DB {
                 password: env.DB_PASSWORD,
                 database: env.DB_NAME
             });
-            const [res] = await this.dbh.execute(sql,parameters)
+            const [res] = await this.dbh.execute(sql, parameters)
             await this.dbh.end()
             return res
         }catch (e) {
