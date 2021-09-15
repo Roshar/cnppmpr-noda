@@ -42,5 +42,13 @@ module.exports = (app) => {
     app
         .route('/api/logout')
         .post(usersCtrl.logout)
+
+    app
+        .route('/api/sendCodeToMail')
+        .post(usersCtrl.sendCodeToMail)
+
+    app
+        .route('/api/auth/confirmcode')
+        .post(usersCtrl.confirmcode)
 }
 

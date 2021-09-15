@@ -21,52 +21,96 @@ exports.getAllUsers = async (req, res) => {
     }
 }
 
-const confirm = async(req, res) => {
-    let testEmailAccount = await nodemailer.createTestAccount()
+exports.sendCodeToMail = async(req, res) => {
+    const token = req.body.token
 
-    let transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: 'ipkrochr@gmail.com',
-            pass: '99o99o99o',
-        },
-    })
+    try {
+        const sql = 'SELECT login, token_key FROM `authorization` WHERE token_key = "'+  token + '"'
+        const dbObj = new DB()
+        const result = await dbObj.create(sql)
+        console.log(result)
+        if(result) {
+            const login = result[0].login
+
+            // let testEmailAccount = await nodemailer.createTestAccount()
+            //
+            // let transporter = nodemailer.createTransport({
+            //     host: 'smtp.gmail.com',
+            //     port: 587,
+            //     secure: false,
+            //     requireTLS: true,
+            //     auth: {
+            //         user: 'ipkrochr@gmail.com',
+            //         pass: '99o99o99o',
+            //     },
+            // })
+
+            const code = await Math.floor(Math.random() * (9999 - 1000 + 1)) + 1000;
+            console.log('code ' + code)
+            const coder = code + 'r'
+            const salt = bcrypt.genSaltSync(10);
+            const hashcode = bcrypt.hashSync(coder,salt)
 
 
-    await transporter.sendMail({
-        from: '"ГБУ ДПО "ИРО ЧР"" <nodejs@example.com>',
-        to: req.body.email,
-        subject: 'Attachments',
-        text: 'Ваш код доступа: '
-        // html:
-        //     'This <i>message</i> with <strong>attachments</strong>.',
-        // attachments: [
-        //     { filename: 'greetings.txt', path: '/assets/files/' },
-        //     {
-        //         filename: 'greetings.txt',
-        //         content: 'Message from file.',
-        //     },
-        //     { path: 'data:text/plain;base64,QmFzZTY0IG1lc3NhZ2U=' },
-        //     {
-        //         raw: `
-        //   Content-Type: text/plain
-        //   Content-Disposition: attachment;
-        //
-        //   Message from file.
-        // `,
-        //     },
-        // ],
-    })
+
+
+
+            // const emailResult = await transporter.sendMail({
+            //     from: '"ГБУ ДПО "ИРО ЧР"" ipkrochr@gmail.com',
+            //     to: login,
+            //     subject: 'Attachments',
+            //     text: 'Ваш код доступа: '+ code
+            // })
+            // console.log(emailResult)
+            response.status(200,{
+                message:'На ваш электронный адрес выслали письмо с кодом подтверждения',
+                code: hashcode
+            },res)
+        }else {
+            response.status(400,{message:'Ошибка при подтверждении'},res)
+        }
+    } catch(e) {
+        console.log(e)
+    }
 }
 
+exports.confirmcode = async (req, res) => {
+    const code = req.body.code
+    const token = req.body.token
+    const hash = req.body.hash
+    console.log('api')
+    console.log(req.body)
+
+    const match = bcrypt.compareSync(code, hash)
+
+    if(match) {
+        const dbObj = new DB()
+        const sql1 = 'SELECT login FROM `authorization` where `token_key` = "' + token + '"';
+        const result = await dbObj.create(sql1)
+        console.log('sql1')
+        console.log(result)
+        if(result) {
+            console.log('inside')
+            const sql2  = 'UPDATE `users` SET `status`= "" WHERE `login` = "' + result[0].login +'"';
+            const sql3  = 'UPDATE `authorization` SET `status`= "null" WHERE `login` = "' + result[0].login +'"';
+            const res2 = await dbObj.create(sql2)
+            const res3 = await dbObj.create(sql3)
+            if(!res2 || !res3) {
+                console.log('Неизвестная ошибка 2 уровня')
+            }
+            response.status(200,
+                {},res)
+        }else {
+            console.log('Неизвестная ошибка 1 уровня')
+        }
+    }
+
+}
 
 
 exports.signup = async (req, res) => {
     try{
         const {login, password, confirmPassword, name, surname, patronymic="", area, school,phone, role } = req.body
-        // console.log(req.body)
-        // return false
-
 
         const sql = `select * from users where login = "${login}"`;
         const dbObj = new DB()
@@ -119,7 +163,7 @@ exports.singin = async (req, res) => {
                     },config.jwt, {
                         expiresIn: 120 * 120
                     })
-                    const sql2 = "INSERT INTO `authorization`(`token_key`,`login`,`role`) VALUES ('" + `Bearer ${token}` + "','" + rows[0].login + "','" + rows[0].role + "')"
+                    const sql2 = "INSERT INTO `authorization`(`token_key`,`login`,`role`,`status`) VALUES ('" + `Bearer ${token}` + "','" + rows[0].login + "','" + rows[0].role + "','" + rows[0].status + "')"
                     const row2 = await obj.create(sql2)
                     if(!row2){
                         response.status(400,{message:'Ошибка при авторизации, попробуйте снова'},res)
@@ -157,14 +201,13 @@ exports.logout = async (req, res) => {
 exports.getRole = async (req, res) => {
     try{
         const token = req.body.token
-        const sql = 'SELECT role FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
-
+        const sql = 'SELECT role, status FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
         const obj = new DB()
         const rows = await obj.create(sql)
-        // console.log(rows)
-        // return false
         if(rows) {
-            response.status(200,{role: rows[0].role}, res)
+            response.status(200,{
+                role: rows[0].role,
+                status:rows[0].status }, res)
         }else {
             response.status(401, {}, res)
         }
