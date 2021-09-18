@@ -31,19 +31,17 @@ exports.sendCodeToMail = async(req, res) => {
         console.log(result)
         if(result) {
             const login = result[0].login
-
-            // let testEmailAccount = await nodemailer.createTestAccount()
-            //
-            // let transporter = nodemailer.createTransport({
-            //     host: 'smtp.gmail.com',
-            //     port: 587,
-            //     secure: false,
-            //     requireTLS: true,
-            //     auth: {
-            //         user: 'ipkrochr@gmail.com',
-            //         pass: '99o99o99o',
-            //     },
-            // })
+            let testEmailAccount = await nodemailer.createTestAccount()
+            let transporter = nodemailer.createTransport({
+                host: 'smtp.gmail.com',
+                port: 587,
+                secure: false,
+                requireTLS: true,
+                auth: {
+                    user: 'ipkrochr@gmail.com',
+                    pass: '99o99o99o',
+                },
+            })
 
             const code = await Math.floor(Math.random() * (9999 - 1000 + 1)) + 1000;
             console.log('code ' + code)
@@ -51,17 +49,13 @@ exports.sendCodeToMail = async(req, res) => {
             const salt = bcrypt.genSaltSync(10);
             const hashcode = bcrypt.hashSync(coder,salt)
 
-
-
-
-
-            // const emailResult = await transporter.sendMail({
-            //     from: '"ГБУ ДПО "ИРО ЧР"" ipkrochr@gmail.com',
-            //     to: login,
-            //     subject: 'Attachments',
-            //     text: 'Ваш код доступа: '+ code
-            // })
-            // console.log(emailResult)
+            const emailResult = await transporter.sendMail({
+                from: '"ГБУ ДПО "ИРО ЧР"" ipkrochr@gmail.com',
+                to: login,
+                subject: 'Attachments',
+                text: 'Ваш код доступа: '+ code
+            })
+            console.log(emailResult)
             response.status(200,{
                 message:'На ваш электронный адрес выслали письмо с кодом подтверждения',
                 code: hashcode
@@ -78,8 +72,6 @@ exports.confirmcode = async (req, res) => {
     const code = req.body.code
     const token = req.body.token
     const hash = req.body.hash
-    console.log('api')
-    console.log(req.body)
 
     const match = bcrypt.compareSync(code, hash)
 
@@ -87,12 +79,10 @@ exports.confirmcode = async (req, res) => {
         const dbObj = new DB()
         const sql1 = 'SELECT login FROM `authorization` where `token_key` = "' + token + '"';
         const result = await dbObj.create(sql1)
-        console.log('sql1')
         console.log(result)
         if(result) {
-            console.log('inside')
-            const sql2  = 'UPDATE `users` SET `status`= "" WHERE `login` = "' + result[0].login +'"';
-            const sql3  = 'UPDATE `authorization` SET `status`= "null" WHERE `login` = "' + result[0].login +'"';
+            const sql2  = 'UPDATE `users` SET `status`= "on" WHERE `login` = "' + result[0].login +'"';
+            const sql3  = 'UPDATE `authorization` SET `status`= "on" WHERE `login` = "' + result[0].login +'"';
             const res2 = await dbObj.create(sql2)
             const res3 = await dbObj.create(sql3)
             if(!res2 || !res3) {
@@ -121,7 +111,6 @@ exports.signup = async (req, res) => {
         } else if(password != confirmPassword) {
             response.status(400, {message:'Пароль не был корректно подтвержден. Пароль и подтверждение должны совпадать'},res)
         } else {
-
             const salt = bcrypt.genSaltSync(10);
             const hashPass = bcrypt.hashSync(password,salt)
             const sql = "INSERT INTO `users`(`login`,`password`,`name`,`surname`,`patronymic`,`area_id`,`school_id`,`phone`,`role`) VALUES ('" + login + "','" + hashPass + "','" + name + "' ,'" + surname + "','" + patronymic + "','" + area + "','" + school + "','" + phone + "','" + role + "')";

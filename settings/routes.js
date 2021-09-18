@@ -4,6 +4,7 @@ module.exports = (app) => {
     const indexCtrl = require('./../Controller/IndexController')
     const passport = require('passport')
     const usersCtrl = require('./../Controller/UsersController')
+    const disciplinesCtrl = require('./../Controller/DisciplinesController')
     const schoolCtrl = require('./../Controller/SchoolsController')
 
     // get all users from tbl user
@@ -32,6 +33,11 @@ module.exports = (app) => {
     app
         .route('/api/getschools/area')
         .post(schoolCtrl.getAreas)
+
+    // get disciplines
+    app
+        .route('/api/get/discipines')
+        .post(disciplinesCtrl.getDisciplines)
 
     //get role
     app
