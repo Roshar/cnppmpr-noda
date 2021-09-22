@@ -28,7 +28,6 @@ exports.sendCodeToMail = async(req, res) => {
         const sql = 'SELECT login, token_key FROM `authorization` WHERE token_key = "'+  token + '"'
         const dbObj = new DB()
         const result = await dbObj.create(sql)
-        console.log(result)
         if(result) {
             const login = result[0].login
             let testEmailAccount = await nodemailer.createTestAccount()
@@ -100,31 +99,139 @@ exports.confirmcode = async (req, res) => {
 
 exports.signup = async (req, res) => {
     try{
-        const {login, password, confirmPassword, name, surname, patronymic="", area, school,phone, role } = req.body
-
-        const sql = `select * from users where login = "${login}"`;
+        const {login, password, confirmPassword, first_name, surname, patronymic="", area="", school="", phone, discipline, gender } = req.body
+        let role;
+        let sqlOption;
+        let sqlFail;
+        const sql = `SELECT * FROM users WHERE login = "${login}"`;
         const dbObj = new DB()
-        const result = await dbObj.create(sql)
+        let result = await dbObj.create(sql)
 
-        if (req.length) {
+        if (result.length) {
             response.status(401, {message:`Пользователь с таким email - ${login} уже зарегистрирован!`}, res)
         } else if(password != confirmPassword) {
             response.status(400, {message:'Пароль не был корректно подтвержден. Пароль и подтверждение должны совпадать'},res)
         } else {
             const salt = bcrypt.genSaltSync(10);
             const hashPass = bcrypt.hashSync(password,salt)
-            const sql = "INSERT INTO `users`(`login`,`password`,`name`,`surname`,`patronymic`,`area_id`,`school_id`,`phone`,`role`) VALUES ('" + login + "','" + hashPass + "','" + name + "' ,'" + surname + "','" + patronymic + "','" + area + "','" + school + "','" + phone + "','" + role + "')";
-            const result  = dbObj.create(sql)
-            if(result){
+
+            if(req.body.code && req.body.code == "5808"){
+                role = "tutor"
+                sqlOption = "INSERT INTO `tutors`(`login`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`gender`) VALUES ('" + login + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + gender + "')";
+            }else{
+                role = "student"
+                sqlOption = "INSERT INTO `students`(`login`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`area_id`,`school_id`,`gender`) VALUES ('" + login + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + area + "','" + school + "','" + gender + "')";
+            }
+            let sqlUser = "INSERT INTO `users`(`login`,`password`,`role`) VALUES ('" + login + "','" + hashPass + "','" + role + "')";
+            let result  = await dbObj.create(sqlUser)
+            let result2  = await dbObj.create(sqlOption)
+
+            if(result && result2){
                 response.status(200,{message:'Регистрация прошла успешно!'},res)
             }else{
+                if(result){
+                    sqlFail = `DELETE FROM users WHERE login = "${login}"`
+                    await dbObj.create(sqlFail)
+                }
                 response.status(400,{message:'Не получилось зарегистрировать пользователя!'},res)
             }
         }
     }catch (e) {
         response.status(401,{message:'Ошибка соединения с БД'},res)
     }
+}
 
+exports.recovery = async (req, res) => {
+    if(req.body.recovery){
+        let login = req.body.recovery
+        const sql = `SELECT * FROM users WHERE login = "${login}"`;
+        const dbObj = new DB()
+        let result = await dbObj.create(sql)
+
+        // console.log(result)
+
+        if(result.length) {
+            const salt = bcrypt.genSaltSync(10);
+            const hashcode = bcrypt.hashSync(login,salt)
+            const checkInRecoveryTbl = `SELECT id FROM recovery WHERE login = "${login}"`
+            const result1 = await dbObj.create(checkInRecoveryTbl)
+            if(result1.length >1) {
+                response.status(400,{message:'На указанный вами адрес были уже отправлены ссылки для восстановления! Проверьте свою почту. Если вам не пришло письмо с ссылкой для восстановления свяжитесь с администрацией портала'},res)
+            }else {
+                const insertInrecoveryTbl = "INSERT INTO `recovery` (`login`,`hash`) VALUES ('"+ login + "','" + hashcode + "')";
+                const result2 = await dbObj.create(insertInrecoveryTbl)
+                // let testEmailAccount = await nodemailer.createTestAccount()
+                // let transporter = nodemailer.createTransport({
+                //     host: 'smtp.gmail.com',
+                //     port: 587,
+                //     secure: false,
+                //     requireTLS: true,
+                //     auth: {
+                //         user: 'ipkrochr@gmail.com',
+                //         pass: '99o99o99o',
+                //     },
+                // })
+                //
+                //
+                //
+                // const emailResult = await transporter.sendMail({
+                //     from: '"ГБУ ДПО "ИРО ЧР"" ipkrochr@gmail.com',
+                //     to: login,
+                //     subject: 'Attachments',
+                //     text: 'Ваш код доступа: '+ code
+                // })
+                // console.log(emailResult)
+                response.status(200,{
+                    message:'На ваш электронный адрес выслали письмо с ссылкой для подтверждения',
+                    code: hashcode
+                },res)
+            }
+        }else {
+            response.status(400,{message:'Такой пользователь не найден,проверьте корректность email адреса'},res)
+        }
+    }
+}
+
+exports.recoverychecklink = async (req, res) => {
+    if(req.body.link){
+        let link = req.body.link
+        const sql = `SELECT * FROM recovery WHERE hash = "${link}"`;
+        const dbObj = new DB()
+        let result = await dbObj.create(sql)
+        console.log(sql)
+        if(result.length) {
+            const recoverySql = `DELETE FROM recovery WHERE hash = "${link}"`  ;
+            const result2 = await dbObj.create(recoverySql)
+            response.status(200,{
+                message:'Придумайте новый пароль',
+                code: true
+            },res)
+        }else {
+            response.status(400,{message:'Ошибка, неккоректная ссылка'},res)
+        }
+    }
+}
+
+exports.changepassword = async (req, res) => {
+    const {login, password, confirmPassword} = req.body
+    console.log(req.body)
+    // return false
+    if(login){
+        if(password != confirmPassword){
+            response.status(401, {message:`Пользователь с таким email - ${login} уже зарегистрирован!`}, res)
+        }else {
+            const salt = bcrypt.genSaltSync(10);
+            const hashPass = bcrypt.hashSync(password,salt)
+            const sql = `UPDATE users SET password = "${hashPass}"  WHERE login =  "${login}" `;
+            const dbObj = new DB()
+            await dbObj.create(sql)
+            const sql2 = `DELETE FROM recovery WHERE login = "${login}"`
+            await dbObj.create((sql2))
+            response.status(200, {message: "Пароль успешно изменен!"}, res)
+        }
+    }else {
+        response.status(401, {message: "Ошибка при выполнении операции, обратитесь к администратору"}, res)
+    }
 }
 
 

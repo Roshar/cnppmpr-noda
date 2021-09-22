@@ -56,5 +56,19 @@ module.exports = (app) => {
     app
         .route('/api/auth/confirmcode')
         .post(usersCtrl.confirmcode)
+
+    app
+        .route('/api/auth/recovery')
+        .post(usersCtrl.recovery)
+
+    app
+        .route('/api/auth/recoverychecklink')
+        .post(usersCtrl.recoverychecklink)
+
+    app
+        .route('/api/auth/changepassword')
+        .post(usersCtrl.changepassword)
+
+
 }
 
