@@ -4,7 +4,7 @@ const db = require('./../settings/syncdb')
 const config = require('./../dbenv')
 
 
-var options = {
+let options = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: config.jwt
 }

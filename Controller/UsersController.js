@@ -4,10 +4,111 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const DB = require('./../settings/db')
 const config = require('./../dbenv')
-// const {body, validationResult} = require('express-validator')
 const nodemailer = require('nodemailer')
 
 
+exports.signup = async (req, res) => {
+    try{
+        const {login, password, confirmPassword, first_name, surname, patronymic="", area="", school="", phone, discipline, gender } = req.body
+        let role;
+        let sqlOption;
+        let sqlFail;
+        const sql = `SELECT * FROM users WHERE login = "${login}"`;
+        const dbObj = new DB()
+        let result = await dbObj.create(sql)
+
+        if (result.length) {
+            response.status(401, {message:`Пользователь с таким email - ${login} уже зарегистрирован!`}, res)
+        } else if(password != confirmPassword) {
+            response.status(400, {message:'Пароль не был корректно подтвержден. Пароль и подтверждение должны совпадать'},res)
+        } else {
+            const salt = bcrypt.genSaltSync(10);
+            const hashPass = bcrypt.hashSync(password,salt)
+
+            if(req.body.code && req.body.code == "5808"){
+                role = "tutor"
+                sqlOption = "INSERT INTO `tutors`(`login`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`gender`) VALUES ('" + login + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + gender + "')";
+            }else{
+                role = "student"
+                sqlOption = "INSERT INTO `students`(`login`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`area_id`,`school_id`,`gender`) VALUES ('" + login + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + area + "','" + school + "','" + gender + "')";
+            }
+            let sqlUser = "INSERT INTO `users`(`login`,`password`,`role`) VALUES ('" + login + "','" + hashPass + "','" + role + "')";
+            let result  = await dbObj.create(sqlUser)
+            let result2  = await dbObj.create(sqlOption)
+
+            if(result && result2){
+                response.status(200,{message:'Регистрация прошла успешно!'},res)
+            }else{
+                if(result){
+                    sqlFail = `DELETE FROM users WHERE login = "${login}"`
+                    await dbObj.create(sqlFail)
+                }
+                response.status(400,{message:'Не получилось зарегистрировать пользователя!'},res)
+            }
+        }
+    }catch (e) {
+        response.status(401,{message:'Ошибка соединения с БД'},res)
+    }
+}
+
+exports.singin = async (req, res) => {
+    try {
+        const {login, password} = req.body
+        const sql = `select id, login, password, role, status from users where login = "${login}"`;
+        const obj = new DB()
+        const rows = await obj.create(sql)
+
+        if(rows.length <= 0){
+            response.status(401, {message:`Пользователь с таким email ${login} не найден!`},res)
+            return false
+        } else {
+            if(rows[0].password){
+                const passwordTrue = bcrypt.compareSync(password, rows[0].password)
+                console.log(passwordTrue)
+                if(passwordTrue) {
+                    //генерируем токен
+                    const token = jwt.sign({
+                        userId: rows.id,
+                        login: rows.login,
+                        role: rows.role,
+                        status: rows.status,
+                    },config.jwt, {
+                        expiresIn: 120 * 120
+                    })
+                    const sql2 = "INSERT INTO `authorization`(`token_key`,`login`,`role`,`status`) VALUES ('" + `Bearer ${token}` + "','" + rows[0].login + "','" + rows[0].role + "','" + rows[0].status + "')"
+                    const row2 = await obj.create(sql2)
+                    if(!row2){
+                        response.status(400,{message:'Ошибка при авторизации, попробуйте снова'},res)
+                        return false
+                    }
+                    response.status(200,
+                        {token: `Bearer ${token}`,
+                            login: rows[0].login,
+                            role: rows[0].role,
+                            status: rows[0].status},res)
+                } else {
+                    response.status(401, {message:`Пароль не верный.`},res)
+                }
+            }
+            return true
+        }
+
+    } catch (e) {
+        response.status(401,{message:'Ошибка соединения с БД'},res)
+    }
+}
+
+exports.logout = async (req, res) => {
+    try{
+        const token = req.body.token
+        const sql = 'DELETE FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
+        const obj = new DB()
+        const rows = await obj.create(sql)
+        response.status(200, {"result":rows}, res)
+    } catch (e) {
+        console.log("Ошибка при выходе")
+    }
+}
 
 exports.getAllUsers = async (req, res) => {
     const dbObj = new DB()
@@ -43,7 +144,7 @@ exports.sendCodeToMail = async(req, res) => {
             })
 
             const code = await Math.floor(Math.random() * (9999 - 1000 + 1)) + 1000;
-            console.log('code ' + code)
+            // console.log('code ' + code)
             const coder = code + 'r'
             const salt = bcrypt.genSaltSync(10);
             const hashcode = bcrypt.hashSync(coder,salt)
@@ -96,59 +197,12 @@ exports.confirmcode = async (req, res) => {
 
 }
 
-
-exports.signup = async (req, res) => {
-    try{
-        const {login, password, confirmPassword, first_name, surname, patronymic="", area="", school="", phone, discipline, gender } = req.body
-        let role;
-        let sqlOption;
-        let sqlFail;
-        const sql = `SELECT * FROM users WHERE login = "${login}"`;
-        const dbObj = new DB()
-        let result = await dbObj.create(sql)
-
-        if (result.length) {
-            response.status(401, {message:`Пользователь с таким email - ${login} уже зарегистрирован!`}, res)
-        } else if(password != confirmPassword) {
-            response.status(400, {message:'Пароль не был корректно подтвержден. Пароль и подтверждение должны совпадать'},res)
-        } else {
-            const salt = bcrypt.genSaltSync(10);
-            const hashPass = bcrypt.hashSync(password,salt)
-
-            if(req.body.code && req.body.code == "5808"){
-                role = "tutor"
-                sqlOption = "INSERT INTO `tutors`(`login`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`gender`) VALUES ('" + login + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + gender + "')";
-            }else{
-                role = "student"
-                sqlOption = "INSERT INTO `students`(`login`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`area_id`,`school_id`,`gender`) VALUES ('" + login + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + area + "','" + school + "','" + gender + "')";
-            }
-            let sqlUser = "INSERT INTO `users`(`login`,`password`,`role`) VALUES ('" + login + "','" + hashPass + "','" + role + "')";
-            let result  = await dbObj.create(sqlUser)
-            let result2  = await dbObj.create(sqlOption)
-
-            if(result && result2){
-                response.status(200,{message:'Регистрация прошла успешно!'},res)
-            }else{
-                if(result){
-                    sqlFail = `DELETE FROM users WHERE login = "${login}"`
-                    await dbObj.create(sqlFail)
-                }
-                response.status(400,{message:'Не получилось зарегистрировать пользователя!'},res)
-            }
-        }
-    }catch (e) {
-        response.status(401,{message:'Ошибка соединения с БД'},res)
-    }
-}
-
 exports.recovery = async (req, res) => {
     if(req.body.recovery){
         let login = req.body.recovery
         const sql = `SELECT * FROM users WHERE login = "${login}"`;
         const dbObj = new DB()
         let result = await dbObj.create(sql)
-
-        // console.log(result)
 
         if(result.length) {
             const salt = bcrypt.genSaltSync(10);
@@ -160,27 +214,28 @@ exports.recovery = async (req, res) => {
             }else {
                 const insertInrecoveryTbl = "INSERT INTO `recovery` (`login`,`hash`) VALUES ('"+ login + "','" + hashcode + "')";
                 const result2 = await dbObj.create(insertInrecoveryTbl)
-                // let testEmailAccount = await nodemailer.createTestAccount()
-                // let transporter = nodemailer.createTransport({
-                //     host: 'smtp.gmail.com',
-                //     port: 587,
-                //     secure: false,
-                //     requireTLS: true,
-                //     auth: {
-                //         user: 'ipkrochr@gmail.com',
-                //         pass: '99o99o99o',
-                //     },
-                // })
-                //
-                //
-                //
-                // const emailResult = await transporter.sendMail({
-                //     from: '"ГБУ ДПО "ИРО ЧР"" ipkrochr@gmail.com',
-                //     to: login,
-                //     subject: 'Attachments',
-                //     text: 'Ваш код доступа: '+ code
-                // })
-                // console.log(emailResult)
+                console.log(result2)
+                let testEmailAccount = await nodemailer.createTestAccount()
+                let transporter = nodemailer.createTransport({
+                    host: 'smtp.gmail.com',
+                    port: 587,
+                    secure: false,
+                    requireTLS: true,
+                    auth: {
+                        user: 'ipkrochr@gmail.com',
+                        pass: '99o99o99o',
+                    },
+                })
+
+                const emailResult = await transporter.sendMail({
+                    from: '"ГБУ ДПО "ИРО ЧР"" ipkrochr@gmail.com',
+                    to: login,
+                    subject: 'Восстановление пароля',
+                    text: 'Здравствуйте!',
+                    html: `<p>Чтобы сбросить пароль от личного кабинета на cnppmpr.ru, перейдите по ссылке </p>
+                    <a href="http://localhost:8080/recovery?link=${hashcode}"`
+                })
+                console.log(emailResult)
                 response.status(200,{
                     message:'На ваш электронный адрес выслали письмо с ссылкой для подтверждения',
                     code: hashcode
@@ -235,64 +290,7 @@ exports.changepassword = async (req, res) => {
 }
 
 
-exports.singin = async (req, res) => {
-        try {
-            const {login, password} = req.body
-            const sql = `select id, login, password, role, status from users where login = "${login}"`;
-            const obj = new DB()
-            const rows = await obj.create(sql)
 
-            if(rows.length <= 0){
-                response.status(401, {message:`Пользователь с таким email ${login} не найден!`},res)
-                return false
-            } else {
-            if(rows[0].password){
-                const passwordTrue = bcrypt.compareSync(password, rows[0].password)
-                console.log(passwordTrue)
-                if(passwordTrue) {
-                    //генерируем токен
-                    const token = jwt.sign({
-                        userId: rows.id,
-                        login: rows.login,
-                        role: rows.role,
-                        status: rows.status,
-                    },config.jwt, {
-                        expiresIn: 120 * 120
-                    })
-                    const sql2 = "INSERT INTO `authorization`(`token_key`,`login`,`role`,`status`) VALUES ('" + `Bearer ${token}` + "','" + rows[0].login + "','" + rows[0].role + "','" + rows[0].status + "')"
-                    const row2 = await obj.create(sql2)
-                    if(!row2){
-                        response.status(400,{message:'Ошибка при авторизации, попробуйте снова'},res)
-                        return false
-                    }
-                    response.status(200,
-                        {token: `Bearer ${token}`,
-                                login: rows[0].login,
-                                role: rows[0].role,
-                                status: rows[0].status},res)
-                } else {
-                    response.status(401, {message:`Пароль не верный.`},res)
-                }
-            }
-                return true
-            }
-
-        } catch (e) {
-            response.status(401,{message:'Ошибка соединения с БД'},res)
-        }
-}
-
-exports.logout = async (req, res) => {
-    try{
-        const token = req.body.token
-        const sql = 'DELETE FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
-        const obj = new DB()
-        const rows = await obj.create(sql)
-        response.status(200, {"result":rows}, res)
-    } catch (e) {
-        console.log("Ошибка при выходе")
-    }
-}
 
 exports.getRole = async (req, res) => {
     try{

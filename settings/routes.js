@@ -1,11 +1,11 @@
 'use strict'
 
 module.exports = (app) => {
-    const indexCtrl = require('./../Controller/IndexController')
     const passport = require('passport')
     const usersCtrl = require('./../Controller/UsersController')
     const disciplinesCtrl = require('./../Controller/DisciplinesController')
     const schoolCtrl = require('./../Controller/SchoolsController')
+    const student = require('./../Controller/StudentController')
 
     // get all users from tbl user
     app
@@ -68,6 +68,10 @@ module.exports = (app) => {
     app
         .route('/api/auth/changepassword')
         .post(usersCtrl.changepassword)
+
+    app
+        .route('/api/user/getUserData')
+        .post(student.getUserData)
 
 
 }
