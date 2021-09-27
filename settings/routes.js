@@ -2,10 +2,10 @@
 
 module.exports = (app) => {
     const passport = require('passport')
-    const usersCtrl = require('./../Controller/UsersController')
+    const authCtrl = require('../Controller/AuthController')
     const disciplinesCtrl = require('./../Controller/DisciplinesController')
     const schoolCtrl = require('./../Controller/SchoolsController')
-    const student = require('./../Controller/StudentController')
+    const usersCtrl = require('../Controller/UsersController')
 
     // get all users from tbl user
     app
@@ -17,12 +17,12 @@ module.exports = (app) => {
     //registration
     app
         .route('/api/auth/signup')
-        .post(usersCtrl.signup)
+        .post(authCtrl.signup)
 
     // login
     app
         .route('/api/auth/signin')
-        .post(usersCtrl.singin)
+        .post(authCtrl.singin)
 
     // get school by area id
     app
@@ -42,36 +42,36 @@ module.exports = (app) => {
     //get role
     app
         .route('/api/get/role')
-        .post(usersCtrl.getRole)
+        .post(authCtrl.getRole)
 
     //logout
     app
         .route('/api/logout')
-        .post(usersCtrl.logout)
+        .post(authCtrl.logout)
 
     app
         .route('/api/sendCodeToMail')
-        .post(usersCtrl.sendCodeToMail)
+        .post(authCtrl.sendCodeToMail)
 
     app
         .route('/api/auth/confirmcode')
-        .post(usersCtrl.confirmcode)
+        .post(authCtrl.confirmcode)
 
     app
         .route('/api/auth/recovery')
-        .post(usersCtrl.recovery)
+        .post(authCtrl.recovery)
 
     app
         .route('/api/auth/recoverychecklink')
-        .post(usersCtrl.recoverychecklink)
+        .post(authCtrl.recoverychecklink)
 
     app
         .route('/api/auth/changepassword')
-        .post(usersCtrl.changepassword)
+        .post(authCtrl.changepassword)
 
     app
         .route('/api/user/getUserData')
-        .post(student.getUserData)
+        .post(usersCtrl.getUserData)
 
 
 }
