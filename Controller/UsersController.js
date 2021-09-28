@@ -8,6 +8,7 @@ exports.getUserData = async(req, res) => {
         const sql = `SELECT * FROM authorization WHERE token_key = "${req.body.user}" `
         const userData = await userObj.create(sql)
         const tblName = userData[0].role
+
         let mainInfoData = {
             student: [
                 `SELECT students.user_id, students.name, students.surname, students.patronymic, students.phone, schools.school_name, area.title_area, discipline.title_discipline FROM students INNER JOIN schools ON students.school_id = schools.id_school INNER JOIN area ON students.area_id = area.id_area INNER JOIN discipline ON students.discipline_id = discipline.id_dis WHERE students.user_id = "${userData[0]['user_id']}"`,

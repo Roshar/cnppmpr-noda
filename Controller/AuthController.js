@@ -26,7 +26,7 @@ exports.signup = async (req, res) => {
         } else {
             const salt = bcrypt.genSaltSync(10);
             const hashPass = bcrypt.hashSync(password,salt)
-
+            
             if(req.body.code && req.body.code == "5808"){
                 role = "tutor"
                 sqlOption = "INSERT INTO `tutors`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`gender`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + gender + "')";
@@ -37,6 +37,28 @@ exports.signup = async (req, res) => {
             let sqlUser = "INSERT INTO `users`(`id_user`,`login`,`password`,`role`) VALUES ('" + id_user + "','" + login + "','" + hashPass + "','" + role + "')";
             let result  = await dbObj.create(sqlUser)
             let result2  = await dbObj.create(sqlOption)
+            let tblCollection = {
+                iom: id_user + '_iom',
+                student: id_user + '_student',
+                report: id_user + '_report',
+                library: id_user + '_library',
+                subTypeTableIom: id_user +'_sub_type_table_iom'
+            }
+
+            if(role === "tutor") {
+                const tutorOptions = "INSERT INTO `global_workplace_tutors` (`user_id`,`table_iom`,`table_student`,`table_report`,`table_library`,`table_sub_type_iom`,`discipline_id`) VALUES ('" + id_user + "','" + tblCollection.iom + "','" + tblCollection.student + "','" + tblCollection.report + "','" + tblCollection.library + "','" + tblCollection.subTypeTableIom + "','" + discipline + "')";
+                const generationIom = `CREATE TABLE ${tblCollection.iom} ( user_id VARCHAR(255) NOT NULL , iom_id INT NULL DEFAULT NULL ) ENGINE = InnoDB`;
+                const generationStudents = `CREATE TABLE ${tblCollection.student} (student_id VARCHAR(255) NOT NULL , iom_id INT NULL DEFAULT NULL ) ENGINE = InnoDB`;
+                const generationReports = `CREATE TABLE ${tblCollection.report} ( iom_id INT NULL DEFAULT NULL , student_id INT NULL DEFAULT NULL , exercises_id INT NULL DEFAULT NULL , tag_id INT NULL DEFAULT NULL, link VARCHAR(255) NULL DEFAULT NULL ) ENGINE = InnoDB`;
+                const generationLibrary = `CREATE TABLE ${tblCollection.library} (id SERIAL NOT NULL, user_id VARCHAR(255) NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , tag_id INT NULL DEFAULT NULL  ) ENGINE = InnoDB`;
+                const generationSubtypeIom = `CREATE TABLE ${tblCollection.subTypeTableIom} ( id_exercises SERIAL NULL DEFAULT NULL , iom_id INT NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , author VARCHAR(255) NOT NULL , term DATE NULL DEFAULT NULL , tag_id INT NOT NULL , mentor_id INT NULL DEFAULT NULL ) ENGINE = InnoDB;`
+                await dbObj.create(tutorOptions)
+                await dbObj.create(generationIom)
+                await dbObj.create(generationStudents)
+                await dbObj.create(generationReports)
+                await dbObj.create(generationLibrary)
+                await dbObj.create(generationSubtypeIom)
+            }
 
             if(result && result2){
                 response.status(200,{message:'Регистрация прошла успешно!'},res)
