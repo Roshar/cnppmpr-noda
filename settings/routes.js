@@ -73,6 +73,9 @@ module.exports = (app) => {
         .route('/api/user/getUserData')
         .post(usersCtrl.getUserData)
 
+    app
+        .route('/api/user/getFromTutorTbls')
+        .post(usersCtrl.getFromTutorTbls)
 
 }
 

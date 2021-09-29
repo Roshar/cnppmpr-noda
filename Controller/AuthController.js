@@ -26,7 +26,7 @@ exports.signup = async (req, res) => {
         } else {
             const salt = bcrypt.genSaltSync(10);
             const hashPass = bcrypt.hashSync(password,salt)
-            
+
             if(req.body.code && req.body.code == "5808"){
                 role = "tutor"
                 sqlOption = "INSERT INTO `tutors`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`gender`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + gender + "')";
@@ -51,7 +51,7 @@ exports.signup = async (req, res) => {
                 const generationStudents = `CREATE TABLE ${tblCollection.student} (student_id VARCHAR(255) NOT NULL , iom_id INT NULL DEFAULT NULL ) ENGINE = InnoDB`;
                 const generationReports = `CREATE TABLE ${tblCollection.report} ( iom_id INT NULL DEFAULT NULL , student_id INT NULL DEFAULT NULL , exercises_id INT NULL DEFAULT NULL , tag_id INT NULL DEFAULT NULL, link VARCHAR(255) NULL DEFAULT NULL ) ENGINE = InnoDB`;
                 const generationLibrary = `CREATE TABLE ${tblCollection.library} (id SERIAL NOT NULL, user_id VARCHAR(255) NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , tag_id INT NULL DEFAULT NULL  ) ENGINE = InnoDB`;
-                const generationSubtypeIom = `CREATE TABLE ${tblCollection.subTypeTableIom} ( id_exercises SERIAL NULL DEFAULT NULL , iom_id INT NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , author VARCHAR(255) NOT NULL , term DATE NULL DEFAULT NULL , tag_id INT NOT NULL , mentor_id INT NULL DEFAULT NULL ) ENGINE = InnoDB;`
+                const generationSubtypeIom = `CREATE TABLE ${tblCollection.subTypeTableIom} ( id_exercises SERIAL NULL DEFAULT NULL , iom_id INT NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , author VARCHAR(255) NOT NULL , term DATE NULL DEFAULT NULL , tag_id INT NOT NULL , mentor_id INT NULL DEFAULT NULL, status INT NULL DEFAULT NULL ) ENGINE = InnoDB;`
                 await dbObj.create(tutorOptions)
                 await dbObj.create(generationIom)
                 await dbObj.create(generationStudents)
