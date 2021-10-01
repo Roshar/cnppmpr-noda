@@ -6,6 +6,7 @@ module.exports = (app) => {
     const disciplinesCtrl = require('./../Controller/DisciplinesController')
     const schoolCtrl = require('./../Controller/SchoolsController')
     const usersCtrl = require('../Controller/UsersController')
+    const messengerCtrl = require('../Controller/MessengerController')
 
     // get all users from tbl user
     app
@@ -73,6 +74,9 @@ module.exports = (app) => {
         .route('/api/user/getUserData')
         .post(usersCtrl.getUserData)
 
-
+    //get students by tutor id
+    app
+        .route('/api/messenger/getStudents')
+        .post(messengerCtrl.getStudents)
 }
 
