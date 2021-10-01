@@ -6,6 +6,7 @@ module.exports = (app) => {
     const disciplinesCtrl = require('./../Controller/DisciplinesController')
     const schoolCtrl = require('./../Controller/SchoolsController')
     const usersCtrl = require('../Controller/UsersController')
+    const iomCtrl = require('../Controller/IomContoller')
 
     // get all users from tbl user
     app
@@ -76,6 +77,10 @@ module.exports = (app) => {
     app
         .route('/api/user/getFromTutorTbls')
         .post(usersCtrl.getFromTutorTbls)
+
+    app
+        .route('/api/iom/getData')
+        .post(iomCtrl.getData)
 
 }
 
