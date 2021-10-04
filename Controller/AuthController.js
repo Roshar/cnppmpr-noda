@@ -47,11 +47,11 @@ exports.signup = async (req, res) => {
 
             if(role === "tutor") {
                 const tutorOptions = "INSERT INTO `global_workplace_tutors` (`user_id`,`table_iom`,`table_student`,`table_report`,`table_library`,`table_sub_type_iom`,`discipline_id`) VALUES ('" + id_user + "','" + tblCollection.iom + "','" + tblCollection.student + "','" + tblCollection.report + "','" + tblCollection.library + "','" + tblCollection.subTypeTableIom + "','" + discipline + "')";
-                const generationIom = `CREATE TABLE ${tblCollection.iom} ( iom_id SERIAL NULL DEFAULT NULL , title VARCHAR(255) NOT NULL, description TEXT NULL DEFAULT NULL ) ENGINE = InnoDB`;
+                const generationIom = `CREATE TABLE ${tblCollection.iom} (id SERIAL NULL DEFAULT NULL ,iom_id VARCHAR(255) NOT NULL, title VARCHAR(255) NOT NULL, description TEXT NULL DEFAULT NULL ) ENGINE = InnoDB`;
                 const generationStudents = `CREATE TABLE ${tblCollection.student} (student_id VARCHAR(255) NOT NULL , iom_id INT NULL DEFAULT NULL ) ENGINE = InnoDB`;
-                const generationReports = `CREATE TABLE ${tblCollection.report} ( iom_id INT NULL DEFAULT NULL , student_id INT NULL DEFAULT NULL , exercises_id INT NULL DEFAULT NULL , tag_id INT NULL DEFAULT NULL, link VARCHAR(255) NULL DEFAULT NULL ) ENGINE = InnoDB`;
+                const generationReports = `CREATE TABLE ${tblCollection.report} ( id SERIAL NULL DEFAULT NULL ,iom_id VARCHAR(255) NOT NULL , student_id INT NULL DEFAULT NULL , exercises_id INT NULL DEFAULT NULL , tag_id INT NULL DEFAULT NULL, link VARCHAR(255) NULL DEFAULT NULL ) ENGINE = InnoDB`;
                 const generationLibrary = `CREATE TABLE ${tblCollection.library} (id SERIAL NOT NULL, user_id VARCHAR(255) NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , tag_id INT NULL DEFAULT NULL  ) ENGINE = InnoDB`;
-                const generationSubtypeIom = `CREATE TABLE ${tblCollection.subTypeTableIom} ( id_exercises SERIAL NULL DEFAULT NULL , iom_id INT NULL DEFAULT NULL , title VARCHAR(255) NOT NULL , description TEXT NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , author VARCHAR(255) NOT NULL , term DATE NULL DEFAULT NULL , tag_id INT NOT NULL , mentor_id INT NULL DEFAULT NULL, status INT NULL DEFAULT NULL ) ENGINE = InnoDB;`
+                const generationSubtypeIom = `CREATE TABLE ${tblCollection.subTypeTableIom} ( id_exercises SERIAL NULL DEFAULT NULL , iom_id VARCHAR(255) NOT NULL , title VARCHAR(255) NOT NULL , description TEXT NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , author VARCHAR(255) NOT NULL , term DATE NULL DEFAULT NULL , tag_id INT NOT NULL , mentor_id INT NULL DEFAULT NULL, status INT NULL DEFAULT NULL ) ENGINE = InnoDB;`
                 await dbObj.create(tutorOptions)
                 await dbObj.create(generationIom)
                 await dbObj.create(generationStudents)

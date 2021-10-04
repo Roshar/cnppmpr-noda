@@ -82,5 +82,12 @@ module.exports = (app) => {
         .route('/api/iom/getData')
         .post(iomCtrl.getData)
 
+    app
+        .route('/api/iom/addNewIom')
+        .post(iomCtrl.addNewIom)
+    app
+        .route('/api/iom/issetIomId')
+        .post(iomCtrl.issetIomId)
+
 }
 
