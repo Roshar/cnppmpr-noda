@@ -12,8 +12,9 @@ exports.getData = async(req, res) => {
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
         let iomSql = `SELECT * FROM ${tblCollection.iom}`
         let iomData = await userObj.create(iomSql)
-        if(!id_user) {
-            response.status(401, {message:"пусто"},res)
+        console.log(iomData)
+        if(!iomData.length) {
+            response.status(200, {message:"пусто"},res)
         }else {
             response.status(200,
                 iomData,res)
@@ -50,21 +51,69 @@ exports.addNewIom = async(req, res) => {
 }
 exports.issetIomId = async(req, res) => {
     try {
-
         const userObj = new DB()
         const id = await userId(req.body.token)
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
         let iomSql = `SELECT id FROM ${tblCollection.iom} WHERE iom_id = "${req.body.payload.id}"`
         let iomData = await userObj.create(iomSql)
+        let result = [tblCollection,iomData]
         if(!iomData) {
             response.status(401, {message:"не существующий маршрут"},res)
         }else {
             response.status(200,
-                iomData,res)
+                result,res)
             return true
         }
 
     }catch (e) {
         return e
+    }
+}
+exports.getExercise = async(req, res) => {
+    try {
+        console.log(req.body)
+        const userObj = new DB()
+        const id = await userId(req.body.token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        let exerciseSql = `SELECT * FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${req.body.payload.id}"`
+        let exerciseData = await userObj.create(exerciseSql)
+        console.log('API')
+        console.log(exerciseData.length)
+        if(!exerciseData.length) {
+            console.log('fade')
+            response.status(400, {message:"нет заданий"},res)
+        }else {
+            console.log('success')
+            response.status(200,
+                exerciseData,res)
+            return true
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+exports.addExercise = async(req, res) => {
+    try {
+        console.log(req.body)
+        const {title, description, link, author, tag,  status = 1,mentor_id = 0 } = req.body.values
+        const term = '1000-01-01'
+        const tblName = req.body.tbl
+        const iom_id = req.body.values.iom.id
+
+        const activeObj = new DB()
+        const sql = `INSERT INTO ${tblName} (iom_id, title, description, link, author, term, tag_id, mentor_id, status) VALUES ("${iom_id}","${title}","${description}","${link}","${author}","${term}","${tag}","${mentor_id}","${status}")`
+        let result = await activeObj.create(sql)
+        console.log(result.insertId)
+        if(!result.insertId) {
+            response.status(400, {message:"Ошибка при добавлении элемента"},res)
+        }else {
+            // console.log('success')
+            response.status(200,{message:"Задание успешно добавлено", result},res)
+        }
+
+    }catch (e) {
+        // return e
     }
 }
