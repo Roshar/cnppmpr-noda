@@ -20,7 +20,6 @@ exports.getData = async(req, res) => {
                 iomData,res)
             return true
         }
-
     }catch (e) {
         return e
     }
@@ -77,13 +76,10 @@ exports.getExercise = async(req, res) => {
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
         let exerciseSql = `SELECT * FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${req.body.payload.id}"`
         let exerciseData = await userObj.create(exerciseSql)
-        console.log('API')
         console.log(exerciseData.length)
         if(!exerciseData.length) {
-            console.log('fade')
-            response.status(400, {message:"нет заданий"},res)
+            response.status(201, {},res)
         }else {
-            console.log('success')
             response.status(200,
                 exerciseData,res)
             return true
