@@ -5,49 +5,7 @@ const DB = require('./../settings/db')
 const tblMethod = require('./../use/tutorTblCollection')
 const userId = require('./../use/getUserId')
 
-exports.getData = async(req, res) => {
-    try {
-        const userObj = new DB()
-        const id = await userId(req.body.token)
-        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
-        let iomSql = `SELECT * FROM ${tblCollection.iom}`
-        let iomData = await userObj.create(iomSql)
-        console.log(iomData)
-        if(!iomData.length) {
-            response.status(200, {message:"пусто"},res)
-        }else {
-            response.status(200,
-                iomData,res)
-            return true
-        }
-    }catch (e) {
-        return e
-    }
-}
-
-exports.addNewIom = async(req, res) => {
-    try {
-        const userObj = new DB()
-        let iomId = uniqid('itinerary-')
-        const titleIom = req.body.payload.title
-        const description = req.body.payload.description || null
-        const id = await userId(req.body.token)
-        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
-        const iomSql = `INSERT INTO ${tblCollection.iom} (iom_id, title,description) VALUES ("${iomId}","${titleIom}","${description}")`
-        let result = await userObj.create(iomSql)
-        // console.log(result)
-        if(!result) {
-            response.status(400,{message:'Ошибка при создании ИОМа'},res)
-        }else {
-            response.status(200,
-                    {message: 'Индвидуальный образовательный маршрут создан', iomId: iomId },res)
-            return true
-        }
-
-    }catch (e) {
-        return e
-    }
-}
+// CHECK AND GET
 exports.issetIomId = async(req, res) => {
     try {
         const userObj = new DB()
@@ -68,20 +26,43 @@ exports.issetIomId = async(req, res) => {
         return e
     }
 }
-exports.getExercise = async(req, res) => {
+exports.getData = async(req, res) => {
     try {
-        console.log(req.body)
         const userObj = new DB()
         const id = await userId(req.body.token)
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
-        let exerciseSql = `SELECT * FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${req.body.payload.id}"`
-        let exerciseData = await userObj.create(exerciseSql)
-        console.log(exerciseData.length)
-        if(!exerciseData.length) {
-            response.status(201, {},res)
+        let iomSql = `SELECT * FROM ${tblCollection.iom}`
+        let iomData = await userObj.create(iomSql)
+        // console.log(iomData)
+        if(!iomData.length) {
+            response.status(200, {message:"пусто"},res)
         }else {
             response.status(200,
-                exerciseData,res)
+                iomData,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+// INSERT DATA
+
+exports.addNewIom = async(req, res) => {
+    try {
+        const userObj = new DB()
+        let iomId = uniqid('itinerary-')
+        const titleIom = req.body.payload.title
+        const description = req.body.payload.description || null
+        const id = await userId(req.body.token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        const iomSql = `INSERT INTO ${tblCollection.iom} (iom_id, title, description) VALUES ("${iomId}","${titleIom}","${description}")`
+        let result = await userObj.create(iomSql)
+        if(!result) {
+            response.status(400,{message:'Ошибка при создании ИОМа'},res)
+        }else {
+            response.status(200,
+                    {message: 'Индвидуальный образовательный маршрут создан', iomId: iomId },res)
             return true
         }
 
@@ -89,27 +70,90 @@ exports.getExercise = async(req, res) => {
         return e
     }
 }
-
 exports.addExercise = async(req, res) => {
     try {
-        console.log(req.body)
-        const {title, description, link, author, tag,  status = 1,mentor_id = 0 } = req.body.values
+        const {title, description = '', link = '', mentor=0, tag,} = req.body.values
         const term = '1000-01-01'
         const tblName = req.body.tbl
-        const iom_id = req.body.values.iom.id
-
+        const iom_id = req.body.values.iomId
         const activeObj = new DB()
-        const sql = `INSERT INTO ${tblName} (iom_id, title, description, link, author, term, tag_id, mentor_id, status) VALUES ("${iom_id}","${title}","${description}","${link}","${author}","${term}","${tag}","${mentor_id}","${status}")`
+        const sql = `INSERT INTO ${tblName} (iom_id, title, description, link, mentor, term, tag_id) VALUES ("${iom_id}","${title}","${description}","${link}",${mentor},"${term}","${tag}")`
         let result = await activeObj.create(sql)
-        console.log(result.insertId)
         if(!result.insertId) {
             response.status(400, {message:"Ошибка при добавлении элемента"},res)
         }else {
-            // console.log('success')
             response.status(200,{message:"Задание успешно добавлено", result},res)
+        }
+    }catch (e) {
+
+    }
+}
+
+//GET DATA
+
+exports.getExercises = async(req, res) => {
+    try {
+        console.log(req.body)
+        const userObj = new DB()
+        const id = await userId(req.body.token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        let exerciseSql = `SELECT * FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${req.body.payload.id}"`
+        let exerciseData = await userObj.create(exerciseSql)
+        console.log(exerciseData)
+        if(!exerciseData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                exerciseData,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+exports.getTask = async(req, res) => {
+    const iomId = req.body.payload.param.id
+    const taskId = req.body.payload.param.task
+    let taskSql;
+    try {
+        const userObj = new DB()
+        const id = await userId(req.body.token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        const tbl = tblCollection.subTypeTableIom
+        //taskSql = `SELECT ${tbl}.id_exercises, ${tbl}.iom_id, ${tbl}.title, ${tbl}.description, ${tbl}.link, ${tbl}.mentor, ${tbl}.term, ${tbl}.tag_id, mentor.id, mentor.mentor_name FROM ${tbl} INNER JOIN mentor ON mentor.id = ${tbl}.mentor  WHERE ${tbl}.iom_id = "${iomId}" AND ${tbl}.id_exercises = "${taskId}"`
+        let taskSql = `SELECT * FROM ${tbl} WHERE ${tbl}.iom_id = "${iomId}" AND ${tbl}.id_exercises = "${taskId}"`
+        let taskData = await userObj.create(taskSql)
+        console.log(taskData)
+        if(!taskData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                taskData[0],res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+// UPDATE AND DELETE
+exports.updateExercise = async(req, res) => {
+    try {
+        console.log(req.body)
+        const {id_exercise, title, description = '', link = '', mentor = 0, tag} = req.body.values
+        const term = '1000-01-01'
+        const tblName = req.body.tbl
+        const iom_id = req.body.values.iomId
+        const activeObj = new DB()
+        const sql = `UPDATE  ${tblName} SET title ="${title}" , description = "${description}", link="${link}", mentor=${mentor}, term="${term}", tag_id=${tag} WHERE iom_id="${iom_id}" AND id_exercises = ${id_exercise}`
+        let result = await activeObj.create(sql)
+        if(!result.affectedRows) {
+            response.status(400, {message:"Ошибка при добавлении элемента"},res)
+        }else {
+            response.status(200,{message:"Задание успешно изменено"},res)
         }
 
     }catch (e) {
-        // return e
+        console.log(e)
     }
 }

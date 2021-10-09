@@ -89,11 +89,16 @@ module.exports = (app) => {
         .route('/api/iom/issetIomId')
         .post(iomCtrl.issetIomId)
     app
-        .route('/api/iom/getExercise')
-        .post(iomCtrl.getExercise)
+        .route('/api/iom/getExercises')
+        .post(iomCtrl.getExercises)
     app
         .route('/api/iom/addExercise')
         .post(iomCtrl.addExercise)
+
+    // get task by id
+    app.route('/api/iom/getTask').post(iomCtrl.getTask)
+
+    app.route('/api/iom/updateExercise').post(iomCtrl.updateExercise)
 
 }
 

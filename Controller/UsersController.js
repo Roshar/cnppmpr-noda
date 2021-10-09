@@ -17,7 +17,6 @@ exports.getUserData = async(req, res) => {
             ],
             tutor: [
                 `SELECT tutors.user_id,tutors.name, tutors.surname, tutors.patronymic, tutors.phone, discipline.title_discipline FROM tutors INNER JOIN discipline ON tutors.discipline_id = discipline.id_dis WHERE tutors.user_id = "${userData[0]['user_id']}"`,
-                // `SELECT students.user_id, students.name, students.surname, students.patronymic, students.phone FROM relationship_tutor_student as rt INNER JOIN students ON students.user_id = rt.s_user_id WHERE rt.t_user_id = "${userData[0]['user_id']}"`
                 `SELECT COUNT(*) FROM relationship_tutor_student as rt WHERE rt.t_user_id = "${userData[0]['user_id']}"`
             ]
         }
@@ -53,13 +52,10 @@ exports.getAllUsers = async (req, res) => {
 
 exports.getFromTutorTbls = async (req, res) => {
     const userObj = new DB()
-    console.log('start')
     req.body
     const sqlGetUserId = `SELECT user_id FROM authorization WHERE token_key = "${req.body.token}"`
     const id_user = await userObj.create(sqlGetUserId)
-    console.log('getFromTutorTbls')
     console.log(id_user)
-    console.log('end')
     const tblCollection = tblMethod.tbleCollection(id_user[0]['user_id'])
 
     //общее количество ИОМов
