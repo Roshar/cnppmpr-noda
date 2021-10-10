@@ -50,6 +50,7 @@ exports.getData = async(req, res) => {
 
 exports.addNewIom = async(req, res) => {
     try {
+
         const userObj = new DB()
         let iomId = uniqid('itinerary-')
         const titleIom = req.body.payload.title
@@ -72,8 +73,8 @@ exports.addNewIom = async(req, res) => {
 }
 exports.addExercise = async(req, res) => {
     try {
-        const {title, description = '', link = '', mentor=0, tag,} = req.body.values
-        const term = '1000-01-01'
+        let {title, description = '', link = '', mentor=0, tag, term } = req.body.values
+        term = term ? term : '1000-01-01'
         const tblName = req.body.tbl
         const iom_id = req.body.values.iomId
         const activeObj = new DB()
@@ -93,11 +94,19 @@ exports.addExercise = async(req, res) => {
 
 exports.getExercises = async(req, res) => {
     try {
-        console.log(req.body)
         const userObj = new DB()
         const id = await userId(req.body.token)
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
-        let exerciseSql = `SELECT * FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${req.body.payload.id}"`
+        let exerciseSql = `SELECT 
+                            id_exercises,
+                            iom_id,
+                            title,
+                            description,
+                            link,
+                            mentor,
+                            DATE_FORMAT(term, '%d.%m.%Y') as term,
+                            tag_id
+        FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${req.body.payload.id}"`
         let exerciseData = await userObj.create(exerciseSql)
         console.log(exerciseData)
         if(!exerciseData.length) {
@@ -121,9 +130,16 @@ exports.getTask = async(req, res) => {
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
         const tbl = tblCollection.subTypeTableIom
         //taskSql = `SELECT ${tbl}.id_exercises, ${tbl}.iom_id, ${tbl}.title, ${tbl}.description, ${tbl}.link, ${tbl}.mentor, ${tbl}.term, ${tbl}.tag_id, mentor.id, mentor.mentor_name FROM ${tbl} INNER JOIN mentor ON mentor.id = ${tbl}.mentor  WHERE ${tbl}.iom_id = "${iomId}" AND ${tbl}.id_exercises = "${taskId}"`
-        let taskSql = `SELECT * FROM ${tbl} WHERE ${tbl}.iom_id = "${iomId}" AND ${tbl}.id_exercises = "${taskId}"`
+        let taskSql = `SELECT    
+                            id_exercises,
+                            iom_id,
+                            title,
+                            description,
+                            link,
+                            mentor,
+                            DATE_FORMAT(term, '%d.%m.%Y') as term,
+                            tag_id FROM ${tbl} WHERE ${tbl}.iom_id = "${iomId}" AND ${tbl}.id_exercises = "${taskId}"`
         let taskData = await userObj.create(taskSql)
-        console.log(taskData)
         if(!taskData.length) {
             response.status(201, {},res)
         }else {

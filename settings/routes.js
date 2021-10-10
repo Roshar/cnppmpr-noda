@@ -7,6 +7,7 @@ module.exports = (app) => {
     const schoolCtrl = require('./../Controller/SchoolsController')
     const usersCtrl = require('../Controller/UsersController')
     const iomCtrl = require('../Controller/IomContoller')
+    const mentorCtrl = require('../Controller/MentorController')
 
     // get all users from tbl user
     app
@@ -97,6 +98,7 @@ module.exports = (app) => {
 
     // get task by id
     app.route('/api/iom/getTask').post(iomCtrl.getTask)
+    app.route('/api/iom/getMentor').post(mentorCtrl.getMentorData)
 
     app.route('/api/iom/updateExercise').post(iomCtrl.updateExercise)
 
