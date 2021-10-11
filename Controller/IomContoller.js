@@ -98,17 +98,18 @@ exports.getExercises = async(req, res) => {
         const id = await userId(req.body.token)
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
         let exerciseSql = `SELECT 
-                            id_exercises,
-                            iom_id,
-                            title,
-                            description,
-                            link,
-                            mentor,
-                            DATE_FORMAT(term, '%d.%m.%Y') as term,
-                            tag_id
-        FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${req.body.payload.id}"`
+                         t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id
+        FROM ${tblCollection.subTypeTableIom} as t INNER JOIN tag ON t.tag_id = tag.id_tag  WHERE t.iom_id = "${req.body.payload.id}" ORDER BY tag.id_tag ASC`
         let exerciseData = await userObj.create(exerciseSql)
-        // console.log(exerciseData)
         if(!exerciseData.length) {
             response.status(201, {},res)
         }else {
@@ -130,16 +131,17 @@ exports.getTask = async(req, res) => {
         const id = await userId(req.body.token)
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
         const tbl = tblCollection.subTypeTableIom
-        //taskSql = `SELECT ${tbl}.id_exercises, ${tbl}.iom_id, ${tbl}.title, ${tbl}.description, ${tbl}.link, ${tbl}.mentor, ${tbl}.term, ${tbl}.tag_id, mentor.id, mentor.mentor_name FROM ${tbl} INNER JOIN mentor ON mentor.id = ${tbl}.mentor  WHERE ${tbl}.iom_id = "${iomId}" AND ${tbl}.id_exercises = "${taskId}"`
         let taskSql = `SELECT    
-                            id_exercises,
-                            iom_id, 
-                            title,
-                            description,
-                            link,
-                            mentor,
-                            DATE_FORMAT(term, '%d.%m.%Y') as term,
-                            tag_id FROM ${tbl} WHERE ${tbl}.iom_id = "${iomId}" AND ${tbl}.id_exercises = "${taskId}"`
+                            t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id FROM ${tbl} as t INNER JOIN tag ON t.tag_id = tag.id_tag WHERE t.iom_id = "${iomId}" AND t.id_exercises = "${taskId}"`
         let taskData = await userObj.create(taskSql)
         if(!taskData.length) {
             response.status(201, {},res)
@@ -156,7 +158,6 @@ exports.getTask = async(req, res) => {
 // UPDATE AND DELETE
 exports.updateExercise = async(req, res) => {
     try {
-        console.log(req.body)
         const {id_exercise, title, description = '', link = '', mentor = 0, tag} = req.body.values
         const term = '1000-01-01'
         const tblName = req.body.tbl
@@ -172,5 +173,31 @@ exports.updateExercise = async(req, res) => {
 
     }catch (e) {
         console.log(e)
+    }
+}
+
+// DELETE
+
+exports.deleteTask = async(req, res) => {
+    // console.log(req.body.tbl)
+    const {id, task} = req.body.param
+    console.log(id)
+    const {subTypeTableIom,report,student} = req.body.tbl
+    const checkAssignedStudentSql = `SELECT COUNT(*) FROM ${student} WHERE iom_id = "${id}"`
+    const checkHasReportFromStudentSql = `SELECT COUNT(*) FROM ${report} WHERE iom_id = "${id}" AND exercises_id = ${task}`;
+    const deleteTaskSql = `DELETE FROM ${subTypeTableIom} WHERE iom_id = "${id}" AND id_exercises = ${task}`
+    const activeObj = new DB()
+    const checkAssignedStudent = await activeObj.create(checkAssignedStudentSql)
+    const checkHasReportFromStudent = await activeObj.create(checkHasReportFromStudentSql)
+    let deleteResult = {};
+
+    if(!checkAssignedStudent[0]['COUNT(*)'] && !checkHasReportFromStudent[0]['COUNT(*)']) {
+        deleteResult = await activeObj.create(deleteTaskSql)
+    }
+
+    if(!deleteResult.affectedRows) {
+        response.status(200,{message:'Данное задание невозможно удалить, т.к. обучающийся приступил к его выполнению. Обратитесь к администратору'},res)
+    }else {
+        response.status(201, {message:'Задание удалено!'},res)
     }
 }
