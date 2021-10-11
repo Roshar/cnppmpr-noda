@@ -42,7 +42,7 @@ exports.getAllUsers = async (req, res) => {
     const dbObj = new DB()
     const sql = 'SELECT * FROM `users`'
     const rows = await dbObj.create(sql)
-    console.log(rows)
+    // console.log(rows)
     if(rows){
         response.status(200,rows,res)
     }else {
@@ -52,10 +52,9 @@ exports.getAllUsers = async (req, res) => {
 
 exports.getFromTutorTbls = async (req, res) => {
     const userObj = new DB()
-    req.body
     const sqlGetUserId = `SELECT user_id FROM authorization WHERE token_key = "${req.body.token}"`
     const id_user = await userObj.create(sqlGetUserId)
-    console.log(id_user)
+    // console.log(id_user)
     const tblCollection = tblMethod.tbleCollection(id_user[0]['user_id'])
 
     //общее количество ИОМов

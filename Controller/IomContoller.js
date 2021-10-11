@@ -108,7 +108,7 @@ exports.getExercises = async(req, res) => {
                             tag_id
         FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${req.body.payload.id}"`
         let exerciseData = await userObj.create(exerciseSql)
-        console.log(exerciseData)
+        // console.log(exerciseData)
         if(!exerciseData.length) {
             response.status(201, {},res)
         }else {
@@ -121,6 +121,7 @@ exports.getExercises = async(req, res) => {
     }
 }
 exports.getTask = async(req, res) => {
+    console.log(req.body)
     const iomId = req.body.payload.param.id
     const taskId = req.body.payload.param.task
     let taskSql;
@@ -132,7 +133,7 @@ exports.getTask = async(req, res) => {
         //taskSql = `SELECT ${tbl}.id_exercises, ${tbl}.iom_id, ${tbl}.title, ${tbl}.description, ${tbl}.link, ${tbl}.mentor, ${tbl}.term, ${tbl}.tag_id, mentor.id, mentor.mentor_name FROM ${tbl} INNER JOIN mentor ON mentor.id = ${tbl}.mentor  WHERE ${tbl}.iom_id = "${iomId}" AND ${tbl}.id_exercises = "${taskId}"`
         let taskSql = `SELECT    
                             id_exercises,
-                            iom_id,
+                            iom_id, 
                             title,
                             description,
                             link,
