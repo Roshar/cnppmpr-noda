@@ -71,7 +71,7 @@ exports.getFromTutorTbls = async (req, res) => {
 
     const data = [{ countIom: countIom[0]['COUNT(*)'],
                     studentIom: countStudentsIom[0]['COUNT(*)'],
-                    finishedIom: finishedIom[0]['COUNT(*)']
+                    finishedIom: finishedIom[0]['COUNT(*)'],
                     }]
     // console.log(data)
     if(countIom){

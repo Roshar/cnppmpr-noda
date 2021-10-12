@@ -31,11 +31,19 @@ exports.getData = async(req, res) => {
         const userObj = new DB()
         const id = await userId(req.body.token)
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
-        let iomSql = `SELECT * FROM ${tblCollection.iom}`
+        let iomSql = `SELECT DATE_FORMAT(created_at, '%d-%m-%Y') as created_at, iom_id,title,description FROM ${tblCollection.iom}`
+        let exerciseCountSql = [];
         let iomData = await userObj.create(iomSql)
-        // console.log(iomData)
+        let countExercises = [];
+        if(iomData.length) {
+            for(let i = 0; i < iomData.length; i++){
+                exerciseCountSql.push(`SELECT COUNT(*)  FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${iomData[i]['iom_id']}"`)
+                countExercises.push(await userObj.create(exerciseCountSql[i]))
+                iomData[i].countExercises = countExercises[i][0]['COUNT(*)']
+            }
+        }
         if(!iomData.length) {
-            response.status(200, {message:"пусто"},res)
+            response.status(200, [],res)
         }else {
             response.status(200,
                 iomData,res)
@@ -122,11 +130,10 @@ exports.getExercises = async(req, res) => {
     }
 }
 exports.getTask = async(req, res) => {
-    console.log(req.body)
-    const iomId = req.body.payload.param.id
-    const taskId = req.body.payload.param.task
-    let taskSql;
+
     try {
+        const iomId = req.body.payload.param.id
+        const taskId = req.body.payload.param.task
         const userObj = new DB()
         const id = await userId(req.body.token)
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
@@ -179,9 +186,7 @@ exports.updateExercise = async(req, res) => {
 // DELETE
 
 exports.deleteTask = async(req, res) => {
-    // console.log(req.body.tbl)
     const {id, task} = req.body.param
-    console.log(id)
     const {subTypeTableIom,report,student} = req.body.tbl
     const checkAssignedStudentSql = `SELECT COUNT(*) FROM ${student} WHERE iom_id = "${id}"`
     const checkHasReportFromStudentSql = `SELECT COUNT(*) FROM ${report} WHERE iom_id = "${id}" AND exercises_id = ${task}`;
@@ -200,4 +205,28 @@ exports.deleteTask = async(req, res) => {
     }else {
         response.status(201, {message:'Задание удалено!'},res)
     }
+}
+
+
+exports.deleteIom = async(req,res) => {
+    try{
+        const uid = await userId(req.body.token)
+        const {id, task} = req.body.param
+        const checkStatusToDeleteSql = `SELECT * FROM permission_to_delete_iom WHERE iom_id = "${id}"`
+        const requestToDeleteSql = "INSERT INTO `permission_to_delete_iom`(`iom_id`,`tutor_id`) VALUES ('" + id + "','" + uid[0]['user_id'] + "')";
+        const activeObj = new DB()
+        const checkStatusToDelete = await activeObj.create(checkStatusToDeleteSql)
+        console.log(checkStatusToDelete)
+        if(checkStatusToDelete.length) {
+            response.status(201,{message:'Вы уже отправляли запрос на удаление. Дождитесь одобрения администратора'},res)
+        }else {
+            const checkStatusToDelete = await activeObj.create(requestToDeleteSql)
+            console.log(checkStatusToDelete)
+            response.status(200,{message:'Ваша заявка принята. После одобрения администратора, данный ИОМ будет удален'},res)
+        }
+
+    }catch(e) {
+        console.log(e.message)
+    }
+
 }

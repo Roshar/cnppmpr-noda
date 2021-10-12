@@ -9,6 +9,7 @@ module.exports = (app) => {
     const iomCtrl = require('../Controller/IomContoller')
     const mentorCtrl = require('../Controller/MentorController')
     const tagCtrl = require('../Controller/TagController')
+    const libCtrl = require('../Controller/LibraryController')
 
     // get all users from tbl user
     app
@@ -104,6 +105,10 @@ module.exports = (app) => {
 
     app.route('/api/iom/updateExercise').post(iomCtrl.updateExercise)
     app.route('/api/iom/deleteTask').post(iomCtrl.deleteTask)
+    app.route('/api/iom/deleteIom').post(iomCtrl.deleteIom)
+    app.route('/api/library/getLibraryData').post(libCtrl.getLibraryData)
+    app.route('/api/library/addExercise').post(libCtrl.addExercise)
+    app.route('/api/library/getTask').post(libCtrl.getTask)
 
 }
 
