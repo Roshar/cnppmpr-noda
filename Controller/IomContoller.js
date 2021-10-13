@@ -97,6 +97,36 @@ exports.addExercise = async(req, res) => {
 
     }
 }
+exports.addExerciseFromLib = async(req, res) => {
+    try {
+
+        const idU = await userId(req.body.token)
+        const id = req.body.values.id
+        const iomId = req.body.values.iomId
+        const tblCollection = tblMethod.tbleCollection(idU[0]['user_id'])
+        const getFromLibByIdSql = `SELECT * FROM ${tblCollection.library} WHERE id = ${id}`
+        const userObj = new DB()
+        const libData = await userObj.create(getFromLibByIdSql)
+        if(libData.length){
+            libData[0].iomId = iomId
+            libData[0].term = '1000-01-01'
+            libData[0].mentor = 0
+        }else {
+            response.status(400, {message:"Ошибка при добавлении элемента"},res)
+        }
+        const insertLibDataInIom = `INSERT INTO ${tblCollection.subTypeTableIom} (iom_id, title, description, link, mentor, term, tag_id)
+                                    VALUES ("${iomId}","${libData[0].title}","${libData[0].description}","${libData[0].link}",${libData[0].mentor},"${libData[0].term}","${libData[0]['tag_id']}")`
+        const result = await userObj.create(insertLibDataInIom)
+
+        if(!result.insertId) {
+            response.status(400, {message:"Ошибка при добавлении элемента"},res)
+        }else {
+            response.status(200,{message:"Задание успешно добавлено", result},res)
+        }
+    }catch (e) {
+
+    }
+}
 
 //GET DATA
 
@@ -165,15 +195,16 @@ exports.getTask = async(req, res) => {
 // UPDATE AND DELETE
 exports.updateExercise = async(req, res) => {
     try {
+        console.log(req.body.values.term)
         const {id_exercise, title, description = '', link = '', mentor = 0, tag} = req.body.values
-        const term = '1000-01-01'
+        const term = req.body.values.term ? req.body.values.term : '1000-01-01'
         const tblName = req.body.tbl
         const iom_id = req.body.values.iomId
         const activeObj = new DB()
         const sql = `UPDATE  ${tblName} SET title ="${title}" , description = "${description}", link="${link}", mentor=${mentor}, term="${term}", tag_id=${tag} WHERE iom_id="${iom_id}" AND id_exercises = ${id_exercise}`
         let result = await activeObj.create(sql)
         if(!result.affectedRows) {
-            response.status(400, {message:"Ошибка при добавлении элемента"},res)
+            response.status(400, {message:"Ошибка при обновлении"},res)
         }else {
             response.status(200,{message:"Задание успешно изменено"},res)
         }
