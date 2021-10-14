@@ -3,6 +3,18 @@ const response = require('./../response')
 const DB = require('./../settings/db')
 const tblMethod = require('./../use/tutorTblCollection')
 
+exports.getAdminData = async(req, res) => {
+    const userObj = new DB()
+    const sql = `SELECT * FROM authorization WHERE token_key = "${req.body.user}" `
+    const userData = await userObj.create(sql)
+    if(userData.length <= 0) {
+        response.status(401, {message:"пусто"}, res)
+    }else {
+        response.status(200, userData, res)
+        return true
+    }
+}
+
 exports.getUserData = async(req, res) => {
     try {
         const userObj = new DB()
@@ -18,7 +30,7 @@ exports.getUserData = async(req, res) => {
             tutor: [
                 `SELECT tutors.user_id,tutors.name, tutors.surname, tutors.patronymic, tutors.phone, discipline.title_discipline FROM tutors INNER JOIN discipline ON tutors.discipline_id = discipline.id_dis WHERE tutors.user_id = "${userData[0]['user_id']}"`,
                 `SELECT COUNT(*) FROM relationship_tutor_student as rt WHERE rt.t_user_id = "${userData[0]['user_id']}"`
-            ]
+            ],
         }
         let returnData = async (tblName, mysqlAction) => {
             return (tblName) ? await mysqlAction : null

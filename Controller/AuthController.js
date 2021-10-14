@@ -8,10 +8,9 @@ const config = require('./../dbenv')
 const nodemailer = require('nodemailer')
 const tblMethod = require('./../use/tutorTblCollection')
 
-
 exports.signup = async (req, res) => {
     try{
-        const {login, password, confirmPassword, first_name, surname, patronymic="", area="", school="", phone, discipline, gender } = req.body
+        const {login, password, confirmPassword, first_name, surname, patronymic="", area="", school="", phone, discipline, gender, birthday="1000-01-01" } = req.body
         let id_user = uniqid()
         let role;
         let sqlOption;
@@ -31,9 +30,13 @@ exports.signup = async (req, res) => {
             if(req.body.code && req.body.code == "5808"){
                 role = "tutor"
                 sqlOption = "INSERT INTO `tutors`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`gender`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + gender + "')";
-            }else{
+            } else if(req.body.code && req.body.code == "7777"){
+                role = "admin"
+                sqlOption = "INSERT INTO `admins`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`gender`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + gender + "')";
+            }
+            else{
                 role = "student"
-                sqlOption = "INSERT INTO `students`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`area_id`,`school_id`,`gender`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + area + "','" + school + "','" + gender + "')";
+                sqlOption = "INSERT INTO `students`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`area_id`,`school_id`,`gender`,birthday) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + area + "','" + school + "','" + gender + "','" + birthday + "')";
             }
             let sqlUser = "INSERT INTO `users`(`id_user`,`login`,`password`,`role`) VALUES ('" + id_user + "','" + login + "','" + hashPass + "','" + role + "')";
             let result  = await dbObj.create(sqlUser)

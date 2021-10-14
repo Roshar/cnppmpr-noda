@@ -10,6 +10,7 @@ module.exports = (app) => {
     const mentorCtrl = require('../Controller/MentorController')
     const tagCtrl = require('../Controller/TagController')
     const libCtrl = require('../Controller/LibraryController')
+    const adminCtrl = require('../Controller/AdminController')
 
     // get all users from tbl user
     app.route('/api/users').get(passport.authenticate('jwt',{
@@ -49,6 +50,8 @@ module.exports = (app) => {
 
     app.route('/api/user/getUserData').post(usersCtrl.getUserData)
 
+    app.route('/api/user/getAdminData').post(usersCtrl.getAdminData)
+
     app.route('/api/user/getFromTutorTbls').post(usersCtrl.getFromTutorTbls)
 
     app.route('/api/iom/getData').post(iomCtrl.getData)
@@ -71,6 +74,11 @@ module.exports = (app) => {
     app.route('/api/library/getTask').post(libCtrl.getTask)
     app.route('/api/library/update').post(libCtrl.update)
     app.route('/api/library/deleteTask').post(libCtrl.deleteTask)
+
+    // ADMIN
+    // getData
+    app.route('/api/admin/getStudentsCount').post(adminCtrl.getStudentsCount)
+    app.route('/api/admin/getOptionFromStudents').post(adminCtrl.getOptionFromStudents)
 
 }
 
