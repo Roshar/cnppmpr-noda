@@ -54,6 +54,23 @@ exports.liveSearchInput = async (req, res) => {
     }
 }
 
+exports.getTutorAndCheckAtFree = async(req, res) => {
+    try {
+        const userObj = new DB()
+        let sql = `SELECT user_id, name, surname,patronymic, discipline_id FROM tutors WHERE user_id NOT IN (SELECT tutor_id FROM groups_relationship)`
+        let sqlData = await userObj.create(sql)
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
 exports.liveSearchInputAndArea = async (req, res) => {
     try {
         const param = req.body.param
@@ -207,6 +224,52 @@ exports.deleteIom = async(req,res) => {
             response.status(201,{message:'Данный ИОМ невозможно удалить. Обратитесь к разработчикам'},res)
         }else {
             response.status(200, {message:'ИОМ удален!'},res)
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.createGroup = async(req, res) => {
+    try {
+        const tutorId = req.body.tutor
+        const title = req.body.title
+        const description = req.body.description
+        const userObj = new DB()
+        const insertSqlG = `INSERT INTO groups (title, description) VALUES ("${title}", "${description}")`
+        let insertSqlGR;
+        let result2;
+        const result = await userObj.create(insertSqlG)
+        if(result.insertId) {
+            insertSqlGR = `INSERT INTO groups_relationship (group_id, tutor_id) VALUES (${result.insertId}, "${tutorId}")`
+            result2 = await userObj.create(insertSqlGR)
+        }
+        if(!result2.insertId) {
+            response.status(201, {message:'Ошибка при создании группы. Обратитесь к разработчикам'},res)
+        }else {
+            response.status(200,{message:'Учебная группа создана'},res)
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.getGroups = async(req,res) => {
+    try {
+        const userObj = new DB()
+        let sql = `SELECT g.id, g.title, g.description, DATE_FORMAT(g.created_at, '%d.%m.%Y %H:%i') as created_at, gr.tutor_id, t.name, t.surname, t.patronymic, d.title_discipline
+                   FROM groups as g 
+                   INNER JOIN groups_relationship as gr ON g.id = gr.group_id
+                   INNER JOIN tutors as t ON gr.tutor_id = t.user_id
+                   INNER JOIN discipline as d ON t.discipline_id = d.id_dis`
+
+        let sqlData = await userObj.create(sql)
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
         }
     }catch (e) {
 

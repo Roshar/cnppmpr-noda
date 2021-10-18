@@ -83,6 +83,9 @@ module.exports = (app) => {
     // ADMIN
     // getData
     app.route('/api/admin/getUserCount').post(adminCtrl.getUserCount)
+    app.route('/api/admin/getTutorAndCheckAtFree').post(adminCtrl.getTutorAndCheckAtFree)
+    app.route('/api/admin/createGroup').post(adminCtrl.createGroup)
+    app.route('/api/admin/getGroups').post(adminCtrl.getGroups)
     app.route('/api/admin/liveSearchInput').post(adminCtrl.liveSearchInput)
     app.route('/api/admin/liveSearchInputAndArea').post(adminCtrl.liveSearchInputAndArea)
     app.route('/api/admin/liveSearchInputAndAreaAndDis').post(adminCtrl.liveSearchInputAndAreaAndDis)
