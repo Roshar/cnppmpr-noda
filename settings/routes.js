@@ -11,6 +11,7 @@ module.exports = (app) => {
     const tagCtrl = require('../Controller/TagController')
     const libCtrl = require('../Controller/LibraryController')
     const adminCtrl = require('../Controller/AdminController')
+    const notificationCtrl = require('../Controller/NotificationController')
 
     // get all users from tbl user
     app.route('/api/users').get(passport.authenticate('jwt',{
@@ -75,10 +76,23 @@ module.exports = (app) => {
     app.route('/api/library/update').post(libCtrl.update)
     app.route('/api/library/deleteTask').post(libCtrl.deleteTask)
 
+    //NOTIFICATION
+    app.route('/api/notification/getAction').post(notificationCtrl.getAction)
+    app.route('/api/notification/getIomRequest').post(notificationCtrl.getIomRequest)
+
     // ADMIN
     // getData
-    app.route('/api/admin/getStudentsCount').post(adminCtrl.getStudentsCount)
+    app.route('/api/admin/getUserCount').post(adminCtrl.getUserCount)
+    app.route('/api/admin/liveSearchInput').post(adminCtrl.liveSearchInput)
+    app.route('/api/admin/liveSearchInputAndArea').post(adminCtrl.liveSearchInputAndArea)
+    app.route('/api/admin/liveSearchInputAndAreaAndDis').post(adminCtrl.liveSearchInputAndAreaAndDis)
+    app.route('/api/admin/liveSearchInputAndDis').post(adminCtrl.liveSearchInputAndDis)
     app.route('/api/admin/getOptionFromStudents').post(adminCtrl.getOptionFromStudents)
+
+    // delete
+    app.route('/api/admin/deleteIom').post(adminCtrl.deleteIom)
+
+
 
 }
 

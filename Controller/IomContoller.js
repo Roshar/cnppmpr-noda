@@ -64,9 +64,14 @@ exports.addNewIom = async(req, res) => {
         const titleIom = req.body.payload.title
         const description = req.body.payload.description || null
         const id = await userId(req.body.token)
+        const disciplineId = `SELECT discipline_id FROM  tutors WHERE user_id = "${id[0]['user_id']}"`
+        const discipline = await userObj.create(disciplineId)
+        const insertIntoCountIomSql = `INSERT INTO count_iom (iom_id, tutor_id, dis_id) VALUES ("${iomId}", "${id[0]['user_id']}",${discipline[0]['discipline_id']})`
+        await userObj.create(insertIntoCountIomSql)
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
         const iomSql = `INSERT INTO ${tblCollection.iom} (iom_id, title, description) VALUES ("${iomId}","${titleIom}","${description}")`
-        let result = await userObj.create(iomSql)
+
+        const result = await userObj.create(iomSql)
         if(!result) {
             response.status(400,{message:'Ошибка при создании ИОМа'},res)
         }else {
@@ -232,9 +237,9 @@ exports.deleteTask = async(req, res) => {
     }
 
     if(!deleteResult.affectedRows) {
-        response.status(200,{message:'Данное задание невозможно удалить, т.к. обучающийся приступил к его выполнению. Обратитесь к администратору'},res)
+        response.status(201,{message:'Данное задание невозможно удалить, т.к. обучающийся приступил к его выполнению. Обратитесь к администратору'},res)
     }else {
-        response.status(201, {message:'Задание удалено!'},res)
+        response.status(200, {message:'Задание удалено!'},res)
     }
 }
 
