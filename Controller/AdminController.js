@@ -172,7 +172,6 @@ exports.liveSearchInputAndDis = async (req, res) => {
     }
 }
 
-
 exports.getOptionFromStudents = async(req,res) => {
     try {
         const userObj = new DB()
@@ -266,6 +265,76 @@ exports.getGroups = async(req,res) => {
         let sqlData = await userObj.create(sql)
         if(!sqlData.length) {
             response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.getGroupById =  async(req,res) => {
+    try {
+        const groupId = req.body.groupId
+        const userObj = new DB()
+        let sql = `SELECT g.id, g.title, g.description, DATE_FORMAT(g.created_at, '%d.%m.%Y %H:%i') as created_at, gr.tutor_id, t.name, t.surname, t.patronymic, d.title_discipline, d.id_dis
+                   FROM groups as g 
+                   INNER JOIN groups_relationship as gr ON g.id = gr.group_id
+                   INNER JOIN tutors as t ON gr.tutor_id = t.user_id
+                   INNER JOIN discipline as d ON t.discipline_id = d.id_dis WHERE g.id = ${groupId}`
+        let sqlData = await userObj.create(sql)
+        if (!sqlData.length) {
+            response.status(201, {}, res)
+        } else {
+            response.status(200,
+                sqlData[0], res)
+            return true
+        }
+    } catch (e) {
+
+    }
+}
+
+exports.getAppointedStudentsCurrentGroup = async(req, res) => {
+    try {
+        const tutorId = req.body.tutorId
+        const groupId = req.body.groupId
+        const userObj = new DB()
+        let sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, a.title_area, sch.school_name,
+        s.gender, isset.isset_iom, isset.finish_iom  FROM students as s 
+        INNER JOIN area as a ON s.area_id = a.id_area
+        INNER JOIN schools as sch ON s.school_id = sch.id_school
+        INNER JOIN admin_student_iom_status as isset ON isset.student_id = s.user_id
+        INNER JOIN relationship_tutor_student as rsi ON s.user_id = rsi.s_user_id
+        WHERE rsi.s_user_id  = "${tutorId}" AND rsi.group_id = ${groupId}`
+        let sqlData = await userObj.create(sql)
+        console.log(sqlData)
+        if(!sqlData.length) {
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.getFreeStudentsByDisciplineId = async(req, res) => {
+    try {
+        const disciplineId = req.body.disId
+        const userObj = new DB()
+        let sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, s.area_id, a.title_area, sch.school_name,
+        s.gender FROM students as s 
+        INNER JOIN area as a ON s.area_id = a.id_area
+        INNER JOIN schools as sch ON s.school_id = sch.id_school
+           WHERE s.user_id NOT IN (SELECT s_user_id FROM relationship_tutor_student) AND s.discipline_id = ${disciplineId}`
+        let sqlData = await userObj.create(sql)
+        if(!sqlData.length) {
+            response.status(201, [],res)
         }else {
             response.status(200,
                 sqlData,res)
