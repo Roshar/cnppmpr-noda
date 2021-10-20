@@ -41,9 +41,14 @@ exports.signup = async (req, res) => {
             let sqlUser = "INSERT INTO `users`(`id_user`,`login`,`password`,`role`) VALUES ('" + id_user + "','" + login + "','" + hashPass + "','" + role + "')";
             let result  = await dbObj.create(sqlUser)
             let result2  = await dbObj.create(sqlOption)
-            const tblCollection = tblMethod.tbleCollection(id_user)
+
+            if(role === "student") {
+                const insertSql = "INSERT INTO `admin_student_iom_status`(`student_id`) VALUES ('" + id_user + "')";
+                await dbObj.create(insertSql)
+            }
 
             if(role === "tutor") {
+                const tblCollection = tblMethod.tbleCollection(id_user)
                 const tutorOptions = "INSERT INTO `global_workplace_tutors` (`user_id`,`table_iom`,`table_student`,`table_mentor`,`table_report`,`table_library`,`table_sub_type_iom`,`discipline_id`) VALUES ('" + id_user + "','" + tblCollection.iom + "','" + tblCollection.student + "','" + tblCollection.mentor + "','" + tblCollection.report + "','" + tblCollection.library + "','" + tblCollection.subTypeTableIom + "','" + discipline + "')";
                 const generationIom = `CREATE TABLE ${tblCollection.iom} (id SERIAL NOT NULL, iom_id VARCHAR(255) NOT NULL, title VARCHAR(255) NOT NULL, description TEXT NULL DEFAULT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = InnoDB`;
                 const generationStudents = `CREATE TABLE ${tblCollection.student} (id SERIAL NOT NULL, student_id VARCHAR(255) NOT NULL , iom_id VARCHAR(255) NOT NULL ) ENGINE = InnoDB`;
@@ -191,7 +196,7 @@ exports.confirmcode = async (req, res) => {
         const dbObj = new DB()
         const sql1 = 'SELECT login FROM `authorization` where `token_key` = "' + token + '"';
         const result = await dbObj.create(sql1)
-        console.log(result)
+
         if(result) {
             const sql2  = 'UPDATE `users` SET `status`= "on" WHERE `login` = "' + result[0].login +'"';
             const sql3  = 'UPDATE `authorization` SET `status`= "on" WHERE `login` = "' + result[0].login +'"';

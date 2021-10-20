@@ -81,8 +81,10 @@ module.exports = (app) => {
     app.route('/api/notification/getIomRequest').post(notificationCtrl.getIomRequest)
 
     // ADMIN
+
     // getData
     app.route('/api/admin/getUserCount').post(adminCtrl.getUserCount)
+    app.route('/api/admin/getLastUsers').post(adminCtrl.getLastUsers)
     app.route('/api/admin/getTutorAndCheckAtFree').post(adminCtrl.getTutorAndCheckAtFree)
     app.route('/api/admin/createGroup').post(adminCtrl.createGroup)
     app.route('/api/admin/getGroupById').post(adminCtrl.getGroupById)
@@ -95,8 +97,13 @@ module.exports = (app) => {
     app.route('/api/admin/liveSearchInputAndDis').post(adminCtrl.liveSearchInputAndDis)
     app.route('/api/admin/getOptionFromStudents').post(adminCtrl.getOptionFromStudents)
 
+
     // delete
     app.route('/api/admin/deleteIom').post(adminCtrl.deleteIom)
+
+    // update
+    app.route('/api/admin/activationById').post(adminCtrl.activationById)
+
 
 
 

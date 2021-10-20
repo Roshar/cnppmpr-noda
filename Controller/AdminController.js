@@ -22,6 +22,39 @@ exports.getUserCount = async(req,res) => {
     }
 }
 
+exports.getLastUsers = async (req, res) => {
+    try {
+
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql =
+                `SELECT 
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline,
+                u.status,
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user LIMIT 50`
+            sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
 exports.liveSearchInput = async (req, res) => {
     try {
         const param = req.body.param
@@ -229,6 +262,23 @@ exports.deleteIom = async(req,res) => {
     }
 }
 
+exports.activationById = async(req,res) => {
+    try {
+        const userId = req.body.userId
+        const userObj = new DB()
+        const sql  = 'UPDATE `users` SET `status`= "on" WHERE `id_user` = "' + userId +'"';
+        let sqlData1 = await userObj.create(sql)
+
+        if(!sqlData1.affectedRows) {
+            response.status(201,{message:'Ошибка операции. Обратитесь к разработчикам'},res)
+        }else {
+            response.status(200, {message:'Пользователь активирован'},res)
+        }
+    }catch (e) {
+
+    }
+}
+
 exports.createGroup = async(req, res) => {
     try {
         const tutorId = req.body.tutor
@@ -310,7 +360,6 @@ exports.getAppointedStudentsCurrentGroup = async(req, res) => {
         INNER JOIN relationship_tutor_student as rsi ON s.user_id = rsi.s_user_id
         WHERE rsi.s_user_id  = "${tutorId}" AND rsi.group_id = ${groupId}`
         let sqlData = await userObj.create(sql)
-        console.log(sqlData)
         if(!sqlData.length) {
             response.status(201, [],res)
         }else {
@@ -325,13 +374,48 @@ exports.getAppointedStudentsCurrentGroup = async(req, res) => {
 
 exports.getFreeStudentsByDisciplineId = async(req, res) => {
     try {
+        console.log(req.body)
         const disciplineId = req.body.disId
+        const areaId = req.body.areaId ? req.body.areaId : ''
+        const gender = req.body.gender ? req.body.gender : ''
+        let sql;
+        if(areaId && gender == '0') {
+            sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, s.area_id, a.title_area, sch.school_name,
+            s.gender FROM students as s 
+            INNER JOIN area as a ON s.area_id = a.id_area
+            INNER JOIN schools as sch ON s.school_id = sch.id_school
+            WHERE s.user_id NOT IN (SELECT s_user_id FROM relationship_tutor_student) 
+            AND s.discipline_id = ${disciplineId}
+            AND s.area_id = ${areaId}`
+        }else if(areaId == '0' && gender) {
+            sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, s.area_id, a.title_area, sch.school_name,
+            s.gender FROM students as s 
+            INNER JOIN area as a ON s.area_id = a.id_area
+            INNER JOIN schools as sch ON s.school_id = sch.id_school
+            WHERE s.user_id NOT IN (SELECT s_user_id FROM relationship_tutor_student) 
+            AND s.discipline_id = ${disciplineId}
+            AND s.gender = "${gender}"`
+        }else if(areaId && gender) {
+            sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, s.area_id, a.title_area, sch.school_name,
+            s.gender FROM students as s 
+            INNER JOIN area as a ON s.area_id = a.id_area
+            INNER JOIN schools as sch ON s.school_id = sch.id_school
+            WHERE s.user_id NOT IN (SELECT s_user_id FROM relationship_tutor_student) 
+            AND s.discipline_id = ${disciplineId}
+            AND s.gender = "${gender}"
+            AND s.area_id = ${areaId}`
+        }
+        else {
+            sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, s.area_id, a.title_area, sch.school_name,
+            s.gender FROM students as s 
+            INNER JOIN area as a ON s.area_id = a.id_area
+            INNER JOIN schools as sch ON s.school_id = sch.id_school
+            WHERE s.user_id NOT IN (SELECT s_user_id FROM relationship_tutor_student) 
+            AND s.discipline_id = ${disciplineId}`
+        }
+
         const userObj = new DB()
-        let sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, s.area_id, a.title_area, sch.school_name,
-        s.gender FROM students as s 
-        INNER JOIN area as a ON s.area_id = a.id_area
-        INNER JOIN schools as sch ON s.school_id = sch.id_school
-           WHERE s.user_id NOT IN (SELECT s_user_id FROM relationship_tutor_student) AND s.discipline_id = ${disciplineId}`
+
         let sqlData = await userObj.create(sql)
         if(!sqlData.length) {
             response.status(201, [],res)
