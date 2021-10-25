@@ -12,6 +12,7 @@ module.exports = (app) => {
     const libCtrl = require('../Controller/LibraryController')
     const adminCtrl = require('../Controller/AdminController')
     const notificationCtrl = require('../Controller/NotificationController')
+    const conCtrl = require('../Controller/ConversationController')
 
     // get all users from tbl user
     app.route('/api/users').get(passport.authenticate('jwt',{
@@ -77,16 +78,40 @@ module.exports = (app) => {
     app.route('/api/library/deleteTask').post(libCtrl.deleteTask)
 
     //NOTIFICATION
+
     app.route('/api/notification/getAction').post(notificationCtrl.getAction)
+    app.route('/api/notification/getRequestStudents').post(notificationCtrl.getRequestStudents)
+    app.route('/api/notification/getRequestTutors').post(notificationCtrl.getRequestTutors)
     app.route('/api/notification/getIomRequest').post(notificationCtrl.getIomRequest)
+
+    // CONVERSATION
+    app.route('/api/conversation/send').post(conCtrl.send)
+    app.route('/api/conversation/getCompanions').post(conCtrl.getCompanions)
+    app.route('/api/conversation/getChat').post(conCtrl.getChat)
+    app.route('/api/conversation/searchUser').post(conCtrl.searchUser)
+    app.route('/api/conversation/createConversationWithoutInsert').post(conCtrl.createConversationWithoutInsert)
+    //app.route('/api/conversation/getUsersForConversation').post(conCtrl.getUsersForConversation)
 
     // ADMIN
 
     // getData
     app.route('/api/admin/getUserCount').post(adminCtrl.getUserCount)
     app.route('/api/admin/getLastUsers').post(adminCtrl.getLastUsers)
+    app.route('/api/admin/getUsersActive').post(adminCtrl.getUsersActive)
+    app.route('/api/admin/getUsersWithDisAreaGenderFilter').post(adminCtrl.getUsersWithDisAreaGenderFilter)
+    app.route('/api/admin/getUsersWithDisAreaFilter').post(adminCtrl.getUsersWithDisAreaFilter)
+    app.route('/api/admin/getUsersWithDisFilter').post(adminCtrl.getUsersWithDisFilter)
+    app.route('/api/admin/getUsersWithGenderFilter').post(adminCtrl.getUsersWithGenderFilter)
+    app.route('/api/admin/getUsersWithAreaFilter').post(adminCtrl.getUsersWithAreaFilter)
+    app.route('/api/admin/getUsersWithAreaGenderFilter').post(adminCtrl.getUsersWithAreaGenderFilter)
+    app.route('/api/admin/getUsersWithDisGenderFilter').post(adminCtrl.getUsersWithDisGenderFilter)
+    app.route('/api/admin/getUsersWithBanStatus').post(adminCtrl.getUsersWithBanStatus)
+    app.route('/api/admin/getIomByStudentAndTutor').post(adminCtrl.getIomByStudentAndTutor)
+    app.route('/api/admin/getDependenciesStudent').post(adminCtrl.getDependenciesStudent)
+    app.route('/api/admin/getProfile').post(adminCtrl.getProfile)
     app.route('/api/admin/getTutorAndCheckAtFree').post(adminCtrl.getTutorAndCheckAtFree)
     app.route('/api/admin/createGroup').post(adminCtrl.createGroup)
+    app.route('/api/admin/addUserInGroupAndTutor').post(adminCtrl.addUserInGroupAndTutor)
     app.route('/api/admin/getGroupById').post(adminCtrl.getGroupById)
     app.route('/api/admin/getGroups').post(adminCtrl.getGroups)
     app.route('/api/admin/getFreeStudentsByDisciplineId').post(adminCtrl.getFreeStudentsByDisciplineId)
@@ -103,6 +128,9 @@ module.exports = (app) => {
 
     // update
     app.route('/api/admin/activationById').post(adminCtrl.activationById)
+    app.route('/api/admin/deactivationById').post(adminCtrl.deactivationById)
+
+
 
 
 

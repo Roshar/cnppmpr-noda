@@ -7,6 +7,8 @@ const DB = require('./../settings/db')
 const config = require('./../dbenv')
 const nodemailer = require('nodemailer')
 const tblMethod = require('./../use/tutorTblCollection')
+const { networkInterfaces } = require('os');
+const generationAvatar = require('./../use/randomImage')
 
 exports.signup = async (req, res) => {
     try{
@@ -27,16 +29,18 @@ exports.signup = async (req, res) => {
             const salt = bcrypt.genSaltSync(10);
             const hashPass = bcrypt.hashSync(password,salt)
 
+            const avatar = await generationAvatar(req.body.gender)
+
             if(req.body.code && req.body.code == "5808"){
                 role = "tutor"
-                sqlOption = "INSERT INTO `tutors`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`gender`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + gender + "')";
+                sqlOption = "INSERT INTO `tutors`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`gender`,`birthday`, `avatar` ) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + gender + "','" + birthday + "','" + avatar + "')";
             } else if(req.body.code && req.body.code == "7777"){
                 role = "admin"
-                sqlOption = "INSERT INTO `admins`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`gender`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + gender + "')";
+                sqlOption = "INSERT INTO `admins`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`gender`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + gender + "','" + avatar + "')";
             }
             else{
                 role = "student"
-                sqlOption = "INSERT INTO `students`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`area_id`,`school_id`,`gender`,birthday) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + area + "','" + school + "','" + gender + "','" + birthday + "')";
+                sqlOption = "INSERT INTO `students`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`area_id`,`school_id`,`gender`,`birthday`, `avatar`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + area + "','" + school + "','" + gender + "','" + birthday + "','" + avatar + "')";
             }
             let sqlUser = "INSERT INTO `users`(`id_user`,`login`,`password`,`role`) VALUES ('" + id_user + "','" + login + "','" + hashPass + "','" + role + "')";
             let result  = await dbObj.create(sqlUser)
@@ -87,6 +91,22 @@ exports.singin = async (req, res) => {
         const obj = new DB()
         const rows = await obj.create(sql)
 
+
+        const nets = networkInterfaces();
+        const address = Object.create(null); // Or just '{}', an empty object
+
+        for (const name of Object.keys(nets)) {
+            for (const net of nets[name]) {
+                // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
+                if (net.family === 'IPv4' && !net.internal) {
+                    if (!address[name]) {
+                        address[name] = [];
+                    }
+                    address[name].push(net.address);
+                }
+            }
+        }
+
         if(rows.length <= 0){
             response.status(401, {message:`Пользователь с таким email ${login} не найден!`},res)
             return false
@@ -103,7 +123,9 @@ exports.singin = async (req, res) => {
                     },config.jwt, {
                         expiresIn: 120 * 120
                     })
-                    const sql2 = "INSERT INTO `authorization`(`token_key`,`login`,`user_id`,`role`,`status`) VALUES ('" + `Bearer ${token}` + "','" + rows[0].login + "','" + rows[0]['id_user'] + "','" + rows[0].role + "','" + rows[0].status + "')"
+                    const online = 'online'
+                    const ip = address['en0']
+                    const sql2 = "INSERT INTO `authorization`(`token_key`,`login`,`user_id`,`role`,`status`,`status_network`,`ip_address`) VALUES ('" + `Bearer ${token}` + "','" + rows[0].login + "','" + rows[0]['id_user'] + "','" + rows[0].role + "','" + rows[0].status + "','" + online +"','" + ip +"')"
                     const row2 = await obj.create(sql2)
                     if(!row2){
                         response.status(400,{message:'Ошибка при авторизации, попробуйте снова'},res)
@@ -306,23 +328,26 @@ exports.changepassword = async (req, res) => {
     }
 }
 
-
-
-
 exports.getRole = async (req, res) => {
     try{
         const token = req.body.token
-        const sql = 'SELECT role, status FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
+        const sql = `SELECT role, status, login FROM authorization WHERE token_key = "${token}"`
+        let sql2;
         const obj = new DB()
         const rows = await obj.create(sql)
+        if(rows) {
+            sql2 = `UPDATE users SET auth_update = NOW() WHERE login = "${rows[0].login}"`
+            await obj.create(sql2)
+        }
         if(rows) {
             response.status(200,{
                 role: rows[0].role,
                 status:rows[0].status }, res)
         }else {
-            response.status(401, {}, res)
+            response.status(401, [], res)
         }
     } catch (e) {
 
     }
 }
+

@@ -40,8 +40,380 @@ exports.getLastUsers = async (req, res) => {
                 INNER JOIN area as a ON t.area_id = a.id_area
                 INNER JOIN schools as s ON t.school_id = s.id_school
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis
-                INNER JOIN users as u ON t.user_id = u.id_user LIMIT 50`
+                INNER JOIN users as u ON t.user_id = u.id_user ORDER by u.created_at DESC LIMIT 50`
             sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.getUsersActive = async (req, res) => {
+    try {
+
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql =
+                `SELECT 
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y')
+                as birthday, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline,
+                u.status,
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user WHERE u.status = 'on'`
+        sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.getProfile = async (req, res) => {
+    try {
+        const userId = req.body.userId
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql =
+                `SELECT    
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender,t.avatar, DATE_FORMAT(t.birthday, '%d.%m.%Y')
+                as birthday,TIMESTAMPDIFF(YEAR, t.birthday, CURDATE()) as age, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline,
+                u.status, u.login, DATE_FORMAT(u.auth_update, '%Y-%m-%d %H:%i:%s') as auth_update, 
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user
+                WHERE u.status = 'on' AND u.id_user = "${userId}"`
+        sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.getDependenciesStudent = async (req, res) => {
+    try {
+        const userId = req.body.userId
+        const userObj = new DB()
+        let sql =  `SELECT rts.group_id, rts.s_user_id, rts.t_user_id, t.name, t.surname, t.patronymic, t.discipline_id,
+                    g.title
+                    FROM relationship_tutor_student as rts
+                    INNER JOIN tutors as t ON rts.t_user_id = t.user_id
+                    INNER JOIN groups as g ON rts.group_id = g.id
+                    WHERE s_user_id = "${userId}"`
+        let sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.getUsersWithBanStatus = async (req, res) => {
+    try {
+
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql =
+                `SELECT 
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline,
+                u.status,
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user WHERE u.status = 'ban'`
+            sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+// area gender discipline
+exports.getUsersWithDisAreaGenderFilter = async (req, res) => {
+    try {
+        const gender = req.body.gender
+        const areaId = req.body.areaId
+        const disId = req.body.disId
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql
+
+        sql = `SELECT
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE t.area_id = ${areaId} AND u.status = 'on' AND t.discipline_id = ${disId} AND  t.gender = "${gender}" `
+        sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+// area
+exports.getUsersWithAreaFilter = async (req, res) => {
+    try {
+        const areaId = req.body.areaId
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql
+
+        sql = `SELECT
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE t.area_id = ${areaId} AND u.status = 'on' `
+        sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+//area gender
+exports.getUsersWithAreaGenderFilter = async (req, res) => {
+    try {
+        const gender = req.body.gender
+        const areaId = req.body.areaId
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql
+
+        sql = `SELECT
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE t.area_id = ${areaId} AND u.status = 'on' AND  t.gender = "${gender}" `
+        sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+// area discipline
+exports.getUsersWithDisAreaFilter = async (req, res) => {
+    try {
+
+        const areaId = req.body.areaId
+        const disId = req.body.disId
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql
+
+        sql = `SELECT
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE t.area_id = ${areaId} AND u.status = 'on' AND t.discipline_id = ${disId} `
+        sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+
+//  gender
+exports.getUsersWithGenderFilter = async (req, res) => {
+    try {
+        const gender = req.body.gender
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql
+
+        sql = `SELECT
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE t.gender = "${gender}" AND u.status = 'on' `
+        sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+// discipline
+exports.getUsersWithDisFilter = async (req, res) => {
+    try {
+
+        const disId = req.body.disId
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql
+
+        sql = `SELECT
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE t.discipline_id = ${disId} AND u.status = 'on' `
+        sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+// discipline gender
+exports.getUsersWithDisGenderFilter = async (req, res) => {
+    try {
+        const gender = req.body.gender
+        const disId = req.body.disId
+        const tblName = req.body.tbl
+        const userObj = new DB()
+        let sqlData
+        let sql
+
+        sql = `SELECT
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
+                a.title_area,
+                s.school_name,
+                d.title_discipline
+                FROM ${tblName} as t 
+                INNER JOIN area as a ON t.area_id = a.id_area
+                INNER JOIN schools as s ON t.school_id = s.id_school
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE t.discipline_id = ${disId} AND u.status = 'on' AND  t.gender = "${gender}" `
+        sqlData = await userObj.create(sql)
 
         if(!sqlData.length) {
             response.status(201, {},res)
@@ -72,7 +444,8 @@ exports.liveSearchInput = async (req, res) => {
                     INNER JOIN area as a ON t.area_id = a.id_area
                     INNER JOIN schools as s ON t.school_id = s.id_school
                     INNER JOIN discipline as d ON t.discipline_id = d.id_dis
-                    WHERE (t.name LIKE "${param}%") OR (t.surname LIKE "${param}%") LIMIT 10`
+                    INNER JOIN users as u ON t.user_id = u.id_user 
+                    WHERE u.status = 'on' AND (t.name LIKE "${param}%" OR t.surname LIKE "${param}%") LIMIT 10`
             sqlData = await userObj.create(sql)
         }
         if(!sqlData.length) {
@@ -121,8 +494,9 @@ exports.liveSearchInputAndArea = async (req, res) => {
                     FROM ${tblName} as t 
                     INNER JOIN area as a ON t.area_id = a.id_area
                     INNER JOIN schools as s ON t.school_id = s.id_school
-                    INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
-                    WHERE t.area_id = ${areaId} AND (t.surname LIKE "${param}%" OR t.name LIKE "${param}%") LIMIT 10`
+                    INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                    INNER JOIN users as u ON t.user_id = u.id_user  
+                    WHERE t.area_id = ${areaId} AND u.status = 'on' AND (t.surname LIKE "${param}%" OR t.name LIKE "${param}%") LIMIT 10`
             sqlData = await userObj.create(sql)
         }
         if(!sqlData.length) {
@@ -156,7 +530,8 @@ exports.liveSearchInputAndAreaAndDis = async (req, res) => {
                     INNER JOIN area as a ON t.area_id = a.id_area
                     INNER JOIN schools as s ON t.school_id = s.id_school
                     INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
-                    WHERE t.area_id = ${areaId} AND t.discipline_id = ${disId} AND (t.surname LIKE "${param}%" OR t.name LIKE "${param}%") LIMIT 10`
+                    INNER JOIN users as u ON t.user_id = u.id_user 
+                    WHERE t.area_id = ${areaId} AND u.status = 'on' AND t.discipline_id = ${disId} AND (t.surname LIKE "${param}%" OR t.name LIKE "${param}%") LIMIT 10`
             sqlData = await userObj.create(sql)
         }
         if(!sqlData.length) {
@@ -189,7 +564,8 @@ exports.liveSearchInputAndDis = async (req, res) => {
                     INNER JOIN area as a ON t.area_id = a.id_area
                     INNER JOIN schools as s ON t.school_id = s.id_school
                     INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
-                    WHERE t.discipline_id = ${disId} AND (t.surname LIKE "${param}%" OR t.name LIKE "${param}%") LIMIT 10`
+                    INNER JOIN users as u ON t.user_id = u.id_user
+                    WHERE t.discipline_id = ${disId} AND u.status = 'on' AND (t.surname LIKE "${param}%" OR t.name LIKE "${param}%") LIMIT 10`
 
             sqlData = await userObj.create(sql)
         }
@@ -267,12 +643,33 @@ exports.activationById = async(req,res) => {
         const userId = req.body.userId
         const userObj = new DB()
         const sql  = 'UPDATE `users` SET `status`= "on" WHERE `id_user` = "' + userId +'"';
+        const sqlSession  = 'UPDATE `authorization` SET `status`= "on" WHERE `user_id` = "' + userId +'"';
         let sqlData1 = await userObj.create(sql)
+        await userObj.create(sqlSession)
 
         if(!sqlData1.affectedRows) {
             response.status(201,{message:'Ошибка операции. Обратитесь к разработчикам'},res)
         }else {
             response.status(200, {message:'Пользователь активирован'},res)
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.deactivationById = async(req,res) => {
+    try {
+        const userId = req.body.userId
+        const userObj = new DB()
+        const sqlUser  = 'UPDATE `users` SET `status`= "ban" WHERE `id_user` = "' + userId +'"';
+        const sqlSession  = 'UPDATE `authorization` SET `status`= "ban" WHERE `user_id` = "' + userId +'"';
+        let sqlData1 = await userObj.create(sqlUser)
+        let sqlData2 = await userObj.create(sqlSession)
+
+        if(!sqlData1.affectedRows ) {
+            response.status(201,{message:'Ошибка операции. Обратитесь к разработчикам'},res)
+        }else {
+            response.status(200, {message:'Пользователь деактивирован'},res)
         }
     }catch (e) {
 
@@ -297,6 +694,24 @@ exports.createGroup = async(req, res) => {
             response.status(201, {message:'Ошибка при создании группы. Обратитесь к разработчикам'},res)
         }else {
             response.status(200,{message:'Учебная группа создана'},res)
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.addUserInGroupAndTutor = async(req, res) => {
+    try {
+        const tutorId = req.body.tutor
+        const studentId = req.body.student
+        const groupId = req.body.group
+        const userObj = new DB()
+        const insertSql = `INSERT INTO relationship_tutor_student (s_user_id, t_user_id, group_id) VALUES ("${studentId}", "${tutorId}", ${groupId} )`
+        const result = await userObj.create(insertSql)
+        if(!result.insertId) {
+            response.status(201, {message:'Ошибка при добавлении в  группу. Обратитесь к разработчикам'},res)
+        }else {
+            response.status(200,{message:'Пользователь добавлен в текущую группу'},res)
         }
     }catch (e) {
 
@@ -358,7 +773,29 @@ exports.getAppointedStudentsCurrentGroup = async(req, res) => {
         INNER JOIN schools as sch ON s.school_id = sch.id_school
         INNER JOIN admin_student_iom_status as isset ON isset.student_id = s.user_id
         INNER JOIN relationship_tutor_student as rsi ON s.user_id = rsi.s_user_id
-        WHERE rsi.s_user_id  = "${tutorId}" AND rsi.group_id = ${groupId}`
+        WHERE rsi.t_user_id  = "${tutorId}" AND rsi.group_id = ${groupId}`
+        let sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.getIomByStudentAndTutor = async(req, res) => {
+    try {
+        const tutorId = req.body.tutor
+        const studentId = req.body.student
+        const userObj = new DB()
+        const tblCollection = tblMethod.tbleCollection(tutorId)
+        const sql = `SELECT rsi.iom_id,rsi.status, iom.iom_id, iom.title FROM relationship_student_iom as rsi
+                     INNER JOIN ${tblCollection.iom} as iom WHERE rsi.user_id = "${studentId}"`;
         let sqlData = await userObj.create(sql)
         if(!sqlData.length) {
             response.status(201, [],res)
@@ -374,7 +811,7 @@ exports.getAppointedStudentsCurrentGroup = async(req, res) => {
 
 exports.getFreeStudentsByDisciplineId = async(req, res) => {
     try {
-        console.log(req.body)
+
         const disciplineId = req.body.disId
         const areaId = req.body.areaId ? req.body.areaId : ''
         const gender = req.body.gender ? req.body.gender : ''
