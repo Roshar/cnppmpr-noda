@@ -8,5 +8,5 @@ exports.status = (status,values, res=[]) => {
 
     res.status(data.status)
     res.json(data)
-    // res.end()
+
 }

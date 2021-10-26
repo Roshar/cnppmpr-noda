@@ -328,7 +328,7 @@ exports.changepassword = async (req, res) => {
     }
 }
 
-exports.getRole = async (req, res) => {
+exports.getRole = async (req, res) => { 
     try{
         const token = req.body.token
         const sql = `SELECT role, status, login FROM authorization WHERE token_key = "${token}"`
@@ -338,14 +338,13 @@ exports.getRole = async (req, res) => {
         if(rows) {
             sql2 = `UPDATE users SET auth_update = NOW() WHERE login = "${rows[0].login}"`
             await obj.create(sql2)
-        }
-        if(rows) {
             response.status(200,{
                 role: rows[0].role,
                 status:rows[0].status }, res)
         }else {
             response.status(401, [], res)
         }
+
     } catch (e) {
 
     }
