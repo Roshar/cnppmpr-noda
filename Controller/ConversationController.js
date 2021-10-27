@@ -6,7 +6,7 @@ const tbl = require('./../use/roleTbl')
 
 exports.send = async(req,res) => {
     try {
-        const {sendBody, token, targetUserId, link} = req.body
+        const {sendBody, token, targetUserId, link = ''} = req.body
         const senderId = await userId(token)
         const links = (link !== '') ? link : null
         const userObj = new DB()
@@ -22,11 +22,14 @@ exports.send = async(req,res) => {
         }else {
             conId = check[0]['id']
         }
+
         if(conId) {
             const sql = `INSERT INTO conversation_room (con_id, source_user, target_user, body, link)
-                        VALUES (${conId},"${senderId[0]['user_id']}", "${targetUserId}", "${sendBody}", ${links})`
+                        VALUES (${conId},"${senderId[0]['user_id']}", "${targetUserId}", "${sendBody}", "${links}")`
+            console.log(sql)
             result2 = await userObj.create(sql)
         }
+        console.log(result2)
 
         if(!result2.insertId) {
             response.status(201, {message:'Ошибка при отправке сообщения. Обратитесь к разработчикам'},res)
@@ -101,18 +104,20 @@ exports.getChat = async(req,res) => {
         const tblName = tbl(senderId[0]['role'])
 
         const senderSql = `SELECT avatar, name, surname, user_id FROM ${tblName} WHERE user_id ="${senderId[0]['user_id']}"`
-        const addresseeSql2 = `SELECT name, surname, avatar FROM ${addresseeTbl} WHERE user_id = "${addressee}"  `
+        const addresseeSql2 = `SELECT t.name, t.surname, t.avatar, t.user_id, DATE_FORMAT(u.auth_update, '%d-%m-%Y %H:%i:%s') as auth_update FROM
+                                ${addresseeTbl} as t 
+                                INNER JOIN users as u ON t.user_id = u.id_user 
+                                WHERE t.user_id = "${addressee}"`
 
         const senderData = await userObj.create(senderSql)
         const addresseeData = await userObj.create(addresseeSql2)
-        console.log(addresseeData)
 
         const conversationId = req.body.conId
 
         let chatData;
         let sqlChat =
             `SELECT c.id, c.source_user, c.target_user, c.body,
-             DATE_FORMAT(c.created_date, '%Y-%m-%d %H:%i:%s') as created_date
+             DATE_FORMAT(c.created_date, '%d-%m-%Y %H:%i:%s') as created_date
              FROM conversation_room as c
              WHERE c.con_id = ${conversationId}`
 
@@ -171,6 +176,7 @@ exports.searchUser = async (req, res) => {
 // создаем беседу
 exports.createConversationWithoutInsert = async(req, res) => {
     try {
+        console.log(req.body)
         const {token, targetUserId} = req.body
         const senderId = await userId(token)
         const userObj = new DB()
@@ -185,12 +191,12 @@ exports.createConversationWithoutInsert = async(req, res) => {
         }else {
             conId = check[0]['id']
         }
-        console.log(conId)
+
         if(!conId) {
             response.status(201, {message:'Ошибка при создании чата с пользователем. Обратитесь к разработчикам'},res)
         }else {
             response.status(200,
-                {},res)
+                {conId,targetUserId},res)
             return true
         }
     }catch (e) {

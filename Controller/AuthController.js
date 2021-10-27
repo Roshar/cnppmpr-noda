@@ -328,7 +328,7 @@ exports.changepassword = async (req, res) => {
     }
 }
 
-exports.getRole = async (req, res) => { 
+exports.getRole = async (req, res) => {
     try{
         const token = req.body.token
         const sql = `SELECT role, status, login FROM authorization WHERE token_key = "${token}"`

@@ -57,11 +57,12 @@ exports.getLastUsers = async (req, res) => {
 
 exports.getUsersActive = async (req, res) => {
     try {
-
         const tblName = req.body.tbl
         const userObj = new DB()
         let sqlData
-        let sql =
+        let sql
+        if(tblName === 'students') {
+            sql =
                 `SELECT 
                 t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y')
                 as birthday, t.discipline_id, t.school_id, t.area_id, 
@@ -75,6 +76,19 @@ exports.getUsersActive = async (req, res) => {
                 INNER JOIN schools as s ON t.school_id = s.id_school
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis
                 INNER JOIN users as u ON t.user_id = u.id_user WHERE u.status = 'on'`
+        } else if(tblName === 'tutors') {
+            sql =
+                `SELECT 
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y')
+                as birthday, t.discipline_id,
+                d.title_discipline,
+                u.status,
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user WHERE u.status = 'on'`
+        }
+
         sqlData = await userObj.create(sql)
 
         if(!sqlData.length) {
@@ -331,8 +345,8 @@ exports.getUsersWithGenderFilter = async (req, res) => {
         const userObj = new DB()
         let sqlData
         let sql
-
-        sql = `SELECT
+        if(tblName === 'students') {
+            sql = `SELECT
                 t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
                 a.title_area,
                 s.school_name,
@@ -343,8 +357,19 @@ exports.getUsersWithGenderFilter = async (req, res) => {
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
                 INNER JOIN users as u ON t.user_id = u.id_user 
                 WHERE t.gender = "${gender}" AND u.status = 'on' `
-        sqlData = await userObj.create(sql)
 
+        }else if(tblName === 'tutors') {
+            sql = `SELECT 
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y')
+                as birthday, t.discipline_id,
+                d.title_discipline,
+                u.status,
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user WHERE t.gender = "${gender}" AND u.status = 'on' `
+        }
+        sqlData = await userObj.create(sql)
         if(!sqlData.length) {
             response.status(201, {},res)
         }else {
@@ -367,7 +392,8 @@ exports.getUsersWithDisFilter = async (req, res) => {
         let sqlData
         let sql
 
-        sql = `SELECT
+        if(tblName === 'students') {
+            sql = `SELECT
                 t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
                 a.title_area,
                 s.school_name,
@@ -378,6 +404,19 @@ exports.getUsersWithDisFilter = async (req, res) => {
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
                 INNER JOIN users as u ON t.user_id = u.id_user 
                 WHERE t.discipline_id = ${disId} AND u.status = 'on' `
+        } else if(tblName === 'tutors') {
+            sql = `SELECT 
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y')
+                as birthday, t.discipline_id,
+                d.title_discipline,
+                u.status,
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE t.discipline_id = ${disId} AND u.status = 'on' `
+        }
+
         sqlData = await userObj.create(sql)
 
         if(!sqlData.length) {
@@ -402,7 +441,8 @@ exports.getUsersWithDisGenderFilter = async (req, res) => {
         let sqlData
         let sql
 
-        sql = `SELECT
+        if(tblName === 'students') {
+            sql = `SELECT
                 t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
                 a.title_area,
                 s.school_name,
@@ -413,6 +453,19 @@ exports.getUsersWithDisGenderFilter = async (req, res) => {
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis 
                 INNER JOIN users as u ON t.user_id = u.id_user 
                 WHERE t.discipline_id = ${disId} AND u.status = 'on' AND  t.gender = "${gender}" `
+        }else if(tblName === 'tutors') {
+            sql = `SELECT 
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y')
+                as birthday, t.discipline_id,
+                d.title_discipline,
+                u.status,
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE t.discipline_id = ${disId} AND u.status = 'on' AND  t.gender = "${gender}"`
+        }
+
         sqlData = await userObj.create(sql)
 
         if(!sqlData.length) {
