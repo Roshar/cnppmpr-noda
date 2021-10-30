@@ -109,14 +109,16 @@ exports.getProfile = async (req, res) => {
         const tblName = req.body.tbl
         const userObj = new DB()
         let sqlData
-        let sql =
+        let sql
+        if (tblName === 'students') {
+             sql =
                 `SELECT    
                 t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender,t.avatar, DATE_FORMAT(t.birthday, '%d.%m.%Y')
                 as birthday,TIMESTAMPDIFF(YEAR, t.birthday, CURDATE()) as age, t.discipline_id, t.school_id, t.area_id, 
                 a.title_area,
                 s.school_name,
                 d.title_discipline,
-                u.status, u.login, DATE_FORMAT(u.auth_update, '%Y-%m-%d %H:%i:%s') as auth_update, 
+                u.status, u.login, DATE_FORMAT(u.auth_update, '%Y-%m-%d %H:%i:%s') as auth_update, DATE_FORMAT(u.auth_update, '%d.%m.%Y в %H:%i') as last_active,
                 DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
                 FROM ${tblName} as t 
                 INNER JOIN area as a ON t.area_id = a.id_area
@@ -124,6 +126,20 @@ exports.getProfile = async (req, res) => {
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis
                 INNER JOIN users as u ON t.user_id = u.id_user
                 WHERE u.status = 'on' AND u.id_user = "${userId}"`
+        }else if(tblName === 'tutors') {
+            sql =
+                `SELECT    
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender,t.avatar, DATE_FORMAT(t.birthday, '%d.%m.%Y')
+                as birthday,TIMESTAMPDIFF(YEAR, t.birthday, CURDATE()) as age, t.discipline_id, 
+                d.title_discipline,
+                u.status, u.login, DATE_FORMAT(u.auth_update, '%Y-%m-%d %H:%i:%s') as auth_update, DATE_FORMAT(u.auth_update, '%d.%m.%Y в %H:%i') as last_active, 
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user
+                WHERE u.status = 'on' AND u.id_user = "${userId}"`
+        }
+
         sqlData = await userObj.create(sql)
 
         if(!sqlData.length) {
@@ -157,6 +173,43 @@ exports.getDependenciesStudent = async (req, res) => {
                 sqlData,res)
             return true
         }
+    }catch (e) {
+
+    }
+}
+
+exports.getDependenciesTutor = async (req, res) => {
+    try {
+        const userId = req.body.userId
+        const userObj = new DB()
+        const tblCollection = tblMethod.tbleCollection(userId)
+        let gender = ''
+
+        let sql =  `SELECT gr.group_id, gr.tutor_id, g.title
+                    FROM groups_relationship as gr 
+                    INNER JOIN groups as g ON gr.group_id = g.id 
+                    WHERE gr.tutor_id = "${userId}"`
+        let groupData = await userObj.create(sql)
+
+
+        let sql2 = `SELECT COUNT(id) as students FROM relationship_tutor_student WHERE t_user_id = "${userId}"`
+        let countStudents = await userObj.create(sql2)
+
+        if(countStudents[0]['students']) {
+            let sql5 = `SELECT COUNT(s1.id) as id FROM ${tblCollection.student} as s1 
+                        INNER JOIN students as s2 ON s1.student_id = s2.user_id WHERE s2.gender = 'man'`
+             gender = await userObj.create(sql5)
+        }
+
+        let sql3 = `SELECT COUNT(id) as reports FROM report WHERE tutor_id = "${userId}"`
+        let countReports = await userObj.create(sql3)
+
+
+
+        let sql4 = `SELECT COUNT(id) as ioms FROM ${tblCollection.iom}`
+        let iomData = await userObj.create(sql4)
+
+        response.status(200,{groupData, countStudents, iomData, gender, countReports},res)
     }catch (e) {
 
     }
@@ -335,7 +388,6 @@ exports.getUsersWithDisAreaFilter = async (req, res) => {
 
     }
 }
-
 
 //  gender
 exports.getUsersWithGenderFilter = async (req, res) => {
@@ -748,6 +800,61 @@ exports.createGroup = async(req, res) => {
         }else {
             response.status(200,{message:'Учебная группа создана'},res)
         }
+    }catch (e) {
+
+    }
+}
+
+exports.deleteGroup = async(req, res) => {
+    try {
+        const id = req.body.id
+        const userObj = new DB()
+        const sql = `SELECT COUNT(id) as id FROM relationship_tutor_student WHERE group_id = ${id}`
+        const result = await userObj.create(sql)
+        if(!result[0].id) {
+            const sql2 = `DELETE FROM groups WHERE id = ${id}`
+            const result2 = await userObj.create(sql2)
+            const sql3 = `DELETE FROM groups_relationship WHERE group_id = ${id}`
+            await userObj.create(sql3)
+            if(!result2.affectedRows) {
+                response.status(201, {message:'Ошибка при выполнении операции. '},res)
+            }else {
+                response.status(200,{message:'Группа удалена'},res)
+            }
+        }else {
+            response.status(201, {message:'И всё-таки мы склонны думать, что Вы поспешили. Поговорите с разработчиками  '},res)
+        }
+
+
+        // if(!result.insertId) {
+        //     response.status(201, {message:'Ошибка при создании группы. Обратитесь к разработчикам'},res)
+        // }else {
+        //     response.status(200,{message:'Учебная группа создана'},res)
+        // }
+    }catch (e) {
+
+    }
+}
+
+exports.deleteInGroup = async(req, res) => {
+    try {
+        const user = req.body.user
+        const groupId = req.body.groupId
+        const userObj = new DB()
+        const sql1 = `SELECT COUNT(id) as id FROM relationship_student_iom WHERE user_id = "${user}" AND group_id = ${groupId}`
+        const result1 = await userObj.create(sql1)
+        if(!result1[0].id){
+            const sql = `DELETE FROM relationship_tutor_student WHERE s_user_id = "${user}" AND group_id = ${groupId}`
+            const result = await userObj.create(sql)
+            if(!result.affectedRows) {
+                response.status(201, {message:'Ошибка при выполнении операции. '},res)
+            }else {
+                response.status(200, {message:'Пользователь удален из группы'},res)
+            }
+        }else {
+            response.status(201, {message:'Пользователя нельзя удалить из группы. Пользователю назначен ИОМ '},res)
+        }
+
     }catch (e) {
 
     }

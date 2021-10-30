@@ -13,6 +13,7 @@ module.exports = (app) => {
     const adminCtrl = require('../Controller/AdminController')
     const notificationCtrl = require('../Controller/NotificationController')
     const conCtrl = require('../Controller/ConversationController')
+    const globalLib = require('../Controller/GlobalLibraryController')
 
     // get all users from tbl user
     app.route('/api/users').get(passport.authenticate('jwt',{
@@ -66,6 +67,10 @@ module.exports = (app) => {
     // get task by id
     app.route('/api/iom/getTask').post(iomCtrl.getTask)
     app.route('/api/iom/getTag').post(tagCtrl.getTag)
+    app.route('/api/iom/getSingleTag').post(tagCtrl.getSingleTag)
+    app.route('/api/iom/editTag').post(tagCtrl.editTag)
+    app.route('/api/iom/addNew').post(tagCtrl.addNew)
+    app.route('/api/iom/deleteTag').post(tagCtrl.deleteTag)
     app.route('/api/iom/getMentor').post(mentorCtrl.getMentorData)
     app.route('/api/iom/updateExercise').post(iomCtrl.updateExercise)
     app.route('/api/iom/deleteTask').post(iomCtrl.deleteTask)
@@ -108,9 +113,12 @@ module.exports = (app) => {
     app.route('/api/admin/getUsersWithBanStatus').post(adminCtrl.getUsersWithBanStatus)
     app.route('/api/admin/getIomByStudentAndTutor').post(adminCtrl.getIomByStudentAndTutor)
     app.route('/api/admin/getDependenciesStudent').post(adminCtrl.getDependenciesStudent)
+    app.route('/api/admin/getDependenciesTutor').post(adminCtrl.getDependenciesTutor)
     app.route('/api/admin/getProfile').post(adminCtrl.getProfile)
     app.route('/api/admin/getTutorAndCheckAtFree').post(adminCtrl.getTutorAndCheckAtFree)
     app.route('/api/admin/createGroup').post(adminCtrl.createGroup)
+    app.route('/api/admin/deleteGroup').post(adminCtrl.deleteGroup)
+    app.route('/api/admin/deleteInGroup').post(adminCtrl.deleteInGroup)
     app.route('/api/admin/addUserInGroupAndTutor').post(adminCtrl.addUserInGroupAndTutor)
     app.route('/api/admin/getGroupById').post(adminCtrl.getGroupById)
     app.route('/api/admin/getGroups').post(adminCtrl.getGroups)
@@ -121,6 +129,15 @@ module.exports = (app) => {
     app.route('/api/admin/liveSearchInputAndAreaAndDis').post(adminCtrl.liveSearchInputAndAreaAndDis)
     app.route('/api/admin/liveSearchInputAndDis').post(adminCtrl.liveSearchInputAndDis)
     app.route('/api/admin/getOptionFromStudents').post(adminCtrl.getOptionFromStudents)
+
+    // GLOBAL LIBRARY
+    app.route('/api/admin/globalLibrary/getData').post(globalLib.getData)
+    app.route('/api/admin/globalLibrary/getDataWithFilter').post(globalLib.getDataWithFilter)
+    app.route('/api/admin/globalLibrary/deleteById').post(globalLib.deleteById)
+    app.route('/api/admin/globalLibrary/addInLibrary').post(globalLib.addInLibrary)
+    app.route('/api/admin/globalLibrary/getDataById').post(globalLib.getDataById)
+    app.route('/api/admin/globalLibrary/updateInLibrary').post(globalLib.updateInLibrary)
+
 
 
     // delete

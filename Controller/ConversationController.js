@@ -66,18 +66,22 @@ exports.getCompanions = async(req,res) => {
         let sqTutors =
             `SELECT c.id, c.source_user_id, c.target_user_id,
              DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+             DATE_FORMAT(u.auth_update, '%Y-%m-%d %H:%i:%s') as auth_update,
              s.name, s.surname, s.avatar
              FROM conversation as c
-             INNER JOIN tutors as s
-             ON c.target_user_id = s.user_id WHERE c.source_user_id = "${senderId[0]['user_id']}" `
+             INNER JOIN tutors as s ON c.target_user_id = s.user_id
+             INNER JOIN users as u ON c.target_user_id = u.id_user
+             WHERE c.source_user_id = "${senderId[0]['user_id']}" `
         tutorsData = await userObj.create(sqTutors)
         let sqAdmins =
             `SELECT c.id, c.source_user_id, c.target_user_id,
              DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+             DATE_FORMAT(u.auth_update, '%Y-%m-%d %H:%i:%s') as auth_update,
              s.name, s.surname, s.avatar
              FROM conversation as c
-             INNER JOIN admins as s
-             ON c.target_user_id = s.user_id WHERE c.source_user_id = "${senderId[0]['user_id']}" `
+             INNER JOIN admins as s ON c.target_user_id = s.user_id
+             INNER JOIN users as u ON c.target_user_id = u.id_user
+             WHERE c.source_user_id = "${senderId[0]['user_id']}" `
         adminsData = await userObj.create(sqAdmins)
         if(!studentsData.length ) {
             response.status(201, {},res)
