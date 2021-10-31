@@ -335,7 +335,7 @@ exports.getRole = async (req, res) => {
         let sql2;
         const obj = new DB()
         const rows = await obj.create(sql)
-        if(rows) {
+        if(rows.length) {
             sql2 = `UPDATE users SET auth_update = NOW() WHERE login = "${rows[0].login}"`
             await obj.create(sql2)
             response.status(200,{
@@ -344,7 +344,6 @@ exports.getRole = async (req, res) => {
         }else {
             response.status(401, [], res)
         }
-
     } catch (e) {
 
     }

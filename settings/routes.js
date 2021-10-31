@@ -54,8 +54,9 @@ module.exports = (app) => {
     app.route('/api/user/getUserData').post(usersCtrl.getUserData)
 
     app.route('/api/user/getAdminData').post(usersCtrl.getAdminData)
-
     app.route('/api/user/getFromTutorTbls').post(usersCtrl.getFromTutorTbls)
+    app.route('/api/user/updateTutorProfile').post(usersCtrl.updateTutorProfile)
+    app.route('/api/user/changeAvatar').post(usersCtrl.changeAvatar)
 
     app.route('/api/iom/getData').post(iomCtrl.getData)
 

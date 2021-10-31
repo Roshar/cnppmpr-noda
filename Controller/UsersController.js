@@ -28,7 +28,13 @@ exports.getUserData = async(req, res) => {
                 `SELECT tutors.user_id, tutors.name, tutors.surname, tutors.patronymic, tutors.phone FROM relationship_tutor_student as rt INNER JOIN tutors ON tutors.user_id = rt.t_user_id WHERE rt.s_user_id = "${userData[0]['user_id']}"`
             ],
             tutor: [
-                `SELECT tutors.user_id,tutors.name, tutors.surname, tutors.patronymic, tutors.phone, discipline.title_discipline FROM tutors INNER JOIN discipline ON tutors.discipline_id = discipline.id_dis WHERE tutors.user_id = "${userData[0]['user_id']}"`,
+                `SELECT tutors.user_id,tutors.name, tutors.surname, tutors.patronymic, tutors.phone, tutors.gender, tutors.avatar, 
+                        DATE_FORMAT(tutors.birthday, '%d.%m.%Y') as birthday, TIMESTAMPDIFF(YEAR, tutors.birthday, CURDATE()) as age,
+                        DATE_FORMAT(tutors.birthday, '%Y-%m-%d') as birthdayConvert,
+                         u.login, discipline.title_discipline FROM tutors 
+                         INNER JOIN discipline ON tutors.discipline_id = discipline.id_dis 
+                         INNER JOIN users as u ON tutors.user_id = u.id_user 
+                         WHERE tutors.user_id = "${userData[0]['user_id']}"`,
                 `SELECT COUNT(*) FROM relationship_tutor_student as rt WHERE rt.t_user_id = "${userData[0]['user_id']}"`
             ],
         }
@@ -81,6 +87,10 @@ exports.getFromTutorTbls = async (req, res) => {
     const finishedIomSql = `SELECT COUNT(*) FROM ${tblCollection.report}`;
     const finishedIom = await userObj.create(finishedIomSql)
 
+    // // кол-во заданий в библиотеке
+    // const finishedIomSql = `SELECT COUNT(*) FROM ${tblCollection.report}`;
+    // const finishedIom = await userObj.create(finishedIomSql)
+
     const data = [{ countIom: countIom[0]['COUNT(*)'],
                     studentIom: countStudentsIom[0]['COUNT(*)'],
                     finishedIom: finishedIom[0]['COUNT(*)'],
@@ -91,4 +101,50 @@ exports.getFromTutorTbls = async (req, res) => {
     }else {
         response.status(400,{message:'Ошибка при получении записи'},res)
     }
+}
+
+exports.updateTutorProfile = async (req, res) => {
+    const {name, surname, patronymic, login, birthday, phone, gender, token} = req.body
+
+    const userObj = new DB()
+    const sql = `SELECT * FROM authorization WHERE token_key = "${token}" `
+    const userData = await userObj.create(sql)
+    if (userData.length) {
+        const user = userData[0]['user_id']
+        const sql2 = `UPDATE users SET login = "${login}" WHERE id_user = "${user}"`
+        await userObj.create(sql2)
+        const sql3 = `UPDATE tutors SET name="${name}", surname="${surname}",
+                      patronymic = "${patronymic}", phone = "${phone}",
+                       birthday = "${birthday}", gender="${gender}" WHERE user_id = "${user}"`
+        const result =  await userObj.create(sql3)
+        if(result.affectedRows) {
+            response.status(200,{message:'Ваш профиль обновлен'},res)
+        }
+    }else {
+        response.status(401,{message:'Ошибка'},res)
+    }
+
+}
+
+exports.changeAvatar = async (req, res) => {
+    console.log(req.body)
+
+    // const userObj = new DB()
+    // const sql = `SELECT * FROM authorization WHERE token_key = "${token}" `
+    // const userData = await userObj.create(sql)
+    // if (userData.length) {
+    //     const user = userData[0]['user_id']
+    //     const sql2 = `UPDATE users SET login = "${login}" WHERE id_user = "${user}"`
+    //     await userObj.create(sql2)
+    //     const sql3 = `UPDATE tutors SET name="${name}", surname="${surname}",
+    //                   patronymic = "${patronymic}", phone = "${phone}",
+    //                    birthday = "${birthday}", gender="${gender}" WHERE user_id = "${user}"`
+    //     const result =  await userObj.create(sql3)
+    //     if(result.affectedRows) {
+    //         response.status(200,{message:'Ваш профиль обновлен'},res)
+    //     }
+    // }else {
+    //     response.status(401,{message:'Ошибка'},res)
+    // }
+
 }
