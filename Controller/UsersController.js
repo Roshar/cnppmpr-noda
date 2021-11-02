@@ -2,6 +2,9 @@
 const response = require('./../response')
 const DB = require('./../settings/db')
 const tblMethod = require('./../use/tutorTblCollection')
+const userId = require('./../use/getUserId')
+const roleTbl = require('./../use/roleTbl')
+
 
 exports.getAdminData = async(req, res) => {
     const userObj = new DB()
@@ -87,9 +90,6 @@ exports.getFromTutorTbls = async (req, res) => {
     const finishedIomSql = `SELECT COUNT(*) FROM ${tblCollection.report}`;
     const finishedIom = await userObj.create(finishedIomSql)
 
-    // // кол-во заданий в библиотеке
-    // const finishedIomSql = `SELECT COUNT(*) FROM ${tblCollection.report}`;
-    // const finishedIom = await userObj.create(finishedIomSql)
 
     const data = [{ countIom: countIom[0]['COUNT(*)'],
                     studentIom: countStudentsIom[0]['COUNT(*)'],
@@ -127,24 +127,20 @@ exports.updateTutorProfile = async (req, res) => {
 }
 
 exports.changeAvatar = async (req, res) => {
-    console.log(req.body)
+    const fileName = req.file.filename
+    const user = req.body.user
+    const userObj = new DB()
+    const getUserInfo = await userId(user)
+    const id = getUserInfo[0]['user_id']
+    const tblName = roleTbl(getUserInfo[0]['role'])
+    const sql2 = `UPDATE ${tblName} SET avatar = "${fileName}" WHERE user_id = "${id}"`
+    userObj.create(sql2).then((r) => {
+        if(!r.affectedRows) {
+            response.status(400, {message:'Произошла ошибка, обратитесь к разработчикам'},res)
+        }else {
+            response.status(200, {message:'Фотография профиля обновлена'}, res)
+        }
+    })
 
-    // const userObj = new DB()
-    // const sql = `SELECT * FROM authorization WHERE token_key = "${token}" `
-    // const userData = await userObj.create(sql)
-    // if (userData.length) {
-    //     const user = userData[0]['user_id']
-    //     const sql2 = `UPDATE users SET login = "${login}" WHERE id_user = "${user}"`
-    //     await userObj.create(sql2)
-    //     const sql3 = `UPDATE tutors SET name="${name}", surname="${surname}",
-    //                   patronymic = "${patronymic}", phone = "${phone}",
-    //                    birthday = "${birthday}", gender="${gender}" WHERE user_id = "${user}"`
-    //     const result =  await userObj.create(sql3)
-    //     if(result.affectedRows) {
-    //         response.status(200,{message:'Ваш профиль обновлен'},res)
-    //     }
-    // }else {
-    //     response.status(401,{message:'Ошибка'},res)
-    // }
 
 }

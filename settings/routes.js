@@ -2,6 +2,17 @@
 
 module.exports = (app) => {
     const passport = require('passport')
+    const multer = require('multer');
+    const path = require('path')
+    const storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, 'uploads/avatar')
+        },
+        filename: function (req, file, cb) {
+            cb(null, file.originalname + '.'+file.mimetype.split('/')[1])
+        }
+    })
+    const upload = multer({ storage: storage });
     const authCtrl = require('../Controller/AuthController')
     const disciplinesCtrl = require('./../Controller/DisciplinesController')
     const schoolCtrl = require('./../Controller/SchoolsController')
@@ -56,7 +67,8 @@ module.exports = (app) => {
     app.route('/api/user/getAdminData').post(usersCtrl.getAdminData)
     app.route('/api/user/getFromTutorTbls').post(usersCtrl.getFromTutorTbls)
     app.route('/api/user/updateTutorProfile').post(usersCtrl.updateTutorProfile)
-    app.route('/api/user/changeAvatar').post(usersCtrl.changeAvatar)
+
+    app.route('/api/user/changeAvatar').post(upload.single('file'), usersCtrl.changeAvatar)
 
     app.route('/api/iom/getData').post(iomCtrl.getData)
 
@@ -77,6 +89,7 @@ module.exports = (app) => {
     app.route('/api/iom/deleteTask').post(iomCtrl.deleteTask)
     app.route('/api/iom/deleteIom').post(iomCtrl.deleteIom)
     app.route('/api/iom/addExerciseFromLib').post(iomCtrl.addExerciseFromLib)
+    app.route('/api/iom/addExerciseFromLibGlobal').post(iomCtrl.addExerciseFromLibGlobal)
     app.route('/api/library/getLibraryData').post(libCtrl.getLibraryData)
     app.route('/api/library/addExercise').post(libCtrl.addExercise)
     app.route('/api/library/getTask').post(libCtrl.getTask)
@@ -133,6 +146,7 @@ module.exports = (app) => {
 
     // GLOBAL LIBRARY
     app.route('/api/admin/globalLibrary/getData').post(globalLib.getData)
+    app.route('/api/admin/globalLibrary/getDataByTutorDiscipline').post(globalLib.getDataByTutorDiscipline)
     app.route('/api/admin/globalLibrary/getDataWithFilter').post(globalLib.getDataWithFilter)
     app.route('/api/admin/globalLibrary/deleteById').post(globalLib.deleteById)
     app.route('/api/admin/globalLibrary/addInLibrary').post(globalLib.addInLibrary)

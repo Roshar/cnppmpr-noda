@@ -26,6 +26,38 @@ exports.getData  = async(req, res) => {
     }
 }
 
+exports.getDataByTutorDiscipline  = async(req, res) => {
+    try {
+        const userObj = new DB()
+        const token = req.body.token
+        const userData = await userId(token)
+        const user = userData[0]['user_id']
+
+        const userSql = `SELECT discipline_id FROM tutors WHERE user_id = "${user}"`
+        const result1 = await userObj.create(userSql)
+        const disId = result1[0]['discipline_id']
+
+        const sql = `SELECT l.id, l.title, l.description, l.link,
+                     l.discipline_id, DATE_FORMAT(l.created_date, '%d.%m.%Y') as created_date,
+                     l.tag_id, d.title_discipline, t.title_tag FROM global_library as l
+                     INNER JOIN discipline as d  ON l.discipline_id = d.id_dis
+                     INNER JOIN tag as t ON l.tag_id = t.id_tag
+                     WHERE l.discipline_id = ${disId}`
+
+        const sqlData = await userObj.create(sql)
+
+        if(!sqlData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                sqlData,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
 exports.getDataById  = async(req, res) => {
     try {
         const userObj = new DB()
@@ -52,7 +84,6 @@ exports.getDataById  = async(req, res) => {
 
 exports.getDataWithFilter  = async(req, res) => {
     try {
-        console.log('fdfd')
         const dis = parseInt(req.body.disId)
         const tag = parseInt(req.body.tagId)
         const userObj = new DB()

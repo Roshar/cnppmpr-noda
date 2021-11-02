@@ -104,7 +104,6 @@ exports.addExercise = async(req, res) => {
 }
 exports.addExerciseFromLib = async(req, res) => {
     try {
-
         const idU = await userId(req.body.token)
         const id = req.body.values.id
         const iomId = req.body.values.iomId
@@ -112,6 +111,37 @@ exports.addExerciseFromLib = async(req, res) => {
         const getFromLibByIdSql = `SELECT * FROM ${tblCollection.library} WHERE id = ${id}`
         const userObj = new DB()
         const libData = await userObj.create(getFromLibByIdSql)
+        if(libData.length){
+            libData[0].iomId = iomId
+            libData[0].term = '1000-01-01'
+            libData[0].mentor = 0
+        }else {
+            response.status(400, {message:"Ошибка при добавлении элемента"},res)
+        }
+        const insertLibDataInIom = `INSERT INTO ${tblCollection.subTypeTableIom} (iom_id, title, description, link, mentor, term, tag_id)
+                                    VALUES ("${iomId}","${libData[0].title}","${libData[0].description}","${libData[0].link}",${libData[0].mentor},"${libData[0].term}","${libData[0]['tag_id']}")`
+        const result = await userObj.create(insertLibDataInIom)
+
+        if(!result.insertId) {
+            response.status(400, {message:"Ошибка при добавлении элемента"},res)
+        }else {
+            response.status(200,{message:"Задание успешно добавлено", result},res)
+        }
+    }catch (e) {
+
+    }
+}
+
+exports.addExerciseFromLibGlobal = async(req, res) => {
+    try {
+        const userObj = new DB()
+        const idU = await userId(req.body.token)
+        const id = req.body.values.id
+        const iomId = req.body.values.iomId
+        const tblCollection = tblMethod.tbleCollection(idU[0]['user_id'])
+        const getFromLibGlobalByIdSql = `SELECT * FROM global_library WHERE id = ${id}`
+        const libData = await userObj.create(getFromLibGlobalByIdSql)
+
         if(libData.length){
             libData[0].iomId = iomId
             libData[0].term = '1000-01-01'
