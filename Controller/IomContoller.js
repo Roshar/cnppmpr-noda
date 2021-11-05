@@ -26,6 +26,7 @@ exports.issetIomId = async(req, res) => {
         return e
     }
 }
+
 exports.getData = async(req, res) => {
     try {
         const userObj = new DB()
@@ -42,6 +43,26 @@ exports.getData = async(req, res) => {
                 iomData[i].countExercises = countExercises[i][0]['COUNT(*)']
             }
         }
+        if(!iomData.length) {
+            response.status(200, [],res)
+        }else {
+            response.status(200,
+                iomData,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+exports.getDataById = async(req, res) => {
+    try {
+        const iomId = req.body.id
+        const userObj = new DB()
+        const id = await userId(req.body.token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        let iomSql = `SELECT DATE_FORMAT(created_at, '%d-%m-%Y') as created_at, iom_id,title,description FROM ${tblCollection.iom} WHERE iom_id = "${iomId}" `
+        let iomData = await userObj.create(iomSql)
         if(!iomData.length) {
             response.status(200, [],res)
         }else {
@@ -194,6 +215,42 @@ exports.getExercises = async(req, res) => {
         return e
     }
 }
+
+
+exports.getStatusFinished = async(req, res) => {
+    try {
+        const userObj = new DB()
+        const {token, studentId, iomId} = req.body
+        const id = await userId(token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        let exerciseSql = `SELECT 
+                            t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id
+        FROM ${tblCollection.report} as report  
+        INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
+        INNER JOIN tag ON t.tag_id = tag.id_tag
+        WHERE report.iom_id = "${iomId}" AND report.student_id = "${studentId}"`
+        let exerciseData = await userObj.create(exerciseSql)
+        if(!exerciseData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                exerciseData,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
 exports.getTask = async(req, res) => {
 
     try {

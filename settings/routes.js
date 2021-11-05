@@ -25,6 +25,7 @@ module.exports = (app) => {
     const notificationCtrl = require('../Controller/NotificationController')
     const conCtrl = require('../Controller/ConversationController')
     const globalLib = require('../Controller/GlobalLibraryController')
+    const studentCtrl = require('../Controller/StudentController')
 
     // get all users from tbl user
     app.route('/api/users').get(passport.authenticate('jwt',{
@@ -71,14 +72,34 @@ module.exports = (app) => {
     app.route('/api/user/changeAvatar').post(upload.single('file'), usersCtrl.changeAvatar)
 
     app.route('/api/iom/getData').post(iomCtrl.getData)
+    app.route('/api/iom/getStatusFinished').post(iomCtrl.getStatusFinished)
 
     app.route('/api/iom/addNewIom').post(iomCtrl.addNewIom)
     app.route('/api/iom/issetIomId').post(iomCtrl.issetIomId)
     app.route('/api/iom/getExercises').post(iomCtrl.getExercises)
     app.route('/api/iom/addExercise').post(iomCtrl.addExercise)
 
+
+    //STUDENTS | TUTOR
+
+    app.route('/api/student/getStudentsForTutor').post(studentCtrl.getStudentsForTutor)
+    app.route('/api/student/getUsersFromIomFreeForEducation').post(studentCtrl.getUsersFromIomFreeForEducation)
+    app.route('/api/student/addStudentInCurrentIom').post(studentCtrl.addStudentInCurrentIom)
+    app.route('/api/student/deleteStudentFromIomEducation').post(studentCtrl.deleteStudentFromIomEducation)
+    app.route('/api/student/getUsersFromIomEducation').post(studentCtrl.getUsersFromIomEducation)
+    app.route('/api/student/getStudentsForTutorWithGender').post(studentCtrl.getStudentsForTutorWithGender)
+    app.route('/api/student/getStudentsForTutorWithArea').post(studentCtrl.getStudentsForTutorWithArea)
+    app.route('/api/student/getStudentsForTutorWithIom').post(studentCtrl.getStudentsForTutorWithIom)
+    app.route('/api/student/getStudentsForTutorWithGenderAndIom').post(studentCtrl.getStudentsForTutorWithGenderAndIom)
+    app.route('/api/student/getStudentsForTutorWithGenderAndArea').post(studentCtrl.getStudentsForTutorWithGenderAndArea)
+    app.route('/api/student/getStudentsForTutorWithGenderAndAreaAndIom').post(studentCtrl.getStudentsForTutorWithGenderAndAreaAndIom)
+    app.route('/api/student/getStudentsForTutorWithAreaAndIom').post(studentCtrl.getStudentsForTutorWithAreaAndIom)
+
+
+
     // get task by id
     app.route('/api/iom/getTask').post(iomCtrl.getTask)
+    app.route('/api/iom/getDataById').post(iomCtrl.getDataById)
     app.route('/api/iom/getTag').post(tagCtrl.getTag)
     app.route('/api/iom/getSingleTag').post(tagCtrl.getSingleTag)
     app.route('/api/iom/editTag').post(tagCtrl.editTag)

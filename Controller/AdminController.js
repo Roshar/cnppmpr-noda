@@ -27,8 +27,10 @@ exports.getLastUsers = async (req, res) => {
 
         const tblName = req.body.tbl
         const userObj = new DB()
-        let sqlData
-        let sql =
+        let sqlData;
+        let sql;
+        if(tblName === 'students') {
+            sql =
                 `SELECT 
                 t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
                 a.title_area,
@@ -40,7 +42,21 @@ exports.getLastUsers = async (req, res) => {
                 INNER JOIN area as a ON t.area_id = a.id_area
                 INNER JOIN schools as s ON t.school_id = s.id_school
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis
-                INNER JOIN users as u ON t.user_id = u.id_user ORDER by u.created_at DESC LIMIT 50`
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE  u.status IS NULL or u.status = 'on'  ORDER by u.created_at DESC`
+        }else if(tblName === 'tutors'){
+            sql =
+                `SELECT 
+                t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, 
+                d.title_discipline,
+                u.status,
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user 
+                WHERE  u.status IS NULL or u.status = 'on'  ORDER by u.created_at DESC`
+        }
+
             sqlData = await userObj.create(sql)
 
         if(!sqlData.length) {
@@ -543,7 +559,7 @@ exports.liveSearchInput = async (req, res) => {
             sql =  `SELECT
                     t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
                     a.title_area,
-                    s.school_name,
+                    s.school_name, 
                     d.title_discipline
                     FROM ${tblName} as t 
                     INNER JOIN area as a ON t.area_id = a.id_area
@@ -841,7 +857,7 @@ exports.deleteInGroup = async(req, res) => {
         const user = req.body.user
         const groupId = req.body.groupId
         const userObj = new DB()
-        const sql1 = `SELECT COUNT(id) as id FROM relationship_student_iom WHERE user_id = "${user}" AND group_id = ${groupId}`
+        const sql1 = `SELECT COUNT(id) as id FROM relationship_student_iom WHERE user_id = "${user}"`
         const result1 = await userObj.create(sql1)
         if(!result1[0].id){
             const sql = `DELETE FROM relationship_tutor_student WHERE s_user_id = "${user}" AND group_id = ${groupId}`

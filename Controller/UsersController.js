@@ -87,7 +87,7 @@ exports.getFromTutorTbls = async (req, res) => {
     const countStudentsIom = await userObj.create(countStudentsWithIom)
 
     // кол-во завершивших ИОМы
-    const finishedIomSql = `SELECT COUNT(*) FROM ${tblCollection.report}`;
+    const finishedIomSql = `SELECT COUNT(*) FROM report WHERE tutor_id = "${id_user[0]['user_id']}"`;
     const finishedIom = await userObj.create(finishedIomSql)
 
 

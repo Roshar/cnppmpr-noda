@@ -146,7 +146,8 @@ exports.deleteById  = async(req, res) => {
 exports.addInLibrary  = async(req, res) => {
     try {
 
-        const {category, discipline, title, description='',link=''} = req.body.payload.values
+        console.log(req.body)
+        const {category, discipline, title, description,link} = req.body.payload.values
         const adminId = await userId(req.body.token)
 
         const userObj = new DB()

@@ -29,7 +29,8 @@ exports.signup = async (req, res) => {
             const salt = bcrypt.genSaltSync(10);
             const hashPass = bcrypt.hashSync(password,salt)
 
-            const avatar = await generationAvatar(req.body.gender)
+            //const avatar = await generationAvatar(req.body.gender)
+            const avatar = 'no_avatar.png'
 
             if(req.body.code && req.body.code == "5808"){
                 role = "tutor"
@@ -237,6 +238,9 @@ exports.confirmcode = async (req, res) => {
 }
 
 exports.recovery = async (req, res) => {
+
+    console.log(req.body.recovery)
+    return false
     if(req.body.recovery){
         let login = req.body.recovery
         const sql = `SELECT * FROM users WHERE login = "${login}"`;
@@ -309,23 +313,23 @@ exports.recoverychecklink = async (req, res) => {
 exports.changepassword = async (req, res) => {
     const {login, password, confirmPassword} = req.body
     console.log(req.body)
-    // return false
-    if(login){
-        if(password != confirmPassword){
-            response.status(401, {message:`Пользователь с таким email - ${login} уже зарегистрирован!`}, res)
-        }else {
-            const salt = bcrypt.genSaltSync(10);
-            const hashPass = bcrypt.hashSync(password,salt)
-            const sql = `UPDATE users SET password = "${hashPass}"  WHERE login =  "${login}" `;
-            const dbObj = new DB()
-            await dbObj.create(sql)
-            const sql2 = `DELETE FROM recovery WHERE login = "${login}"`
-            await dbObj.create((sql2))
-            response.status(200, {message: "Пароль успешно изменен!"}, res)
-        }
-    }else {
-        response.status(401, {message: "Ошибка при выполнении операции, обратитесь к администратору"}, res)
-    }
+    return false
+    // if(login){
+    //     if(password != confirmPassword){
+    //         response.status(401, {message:`Пользователь с таким email - ${login} уже зарегистрирован!`}, res)
+    //     }else {
+    //         const salt = bcrypt.genSaltSync(10);
+    //         const hashPass = bcrypt.hashSync(password,salt)
+    //         const sql = `UPDATE users SET password = "${hashPass}"  WHERE login =  "${login}" `;
+    //         const dbObj = new DB()
+    //         await dbObj.create(sql)
+    //         const sql2 = `DELETE FROM recovery WHERE login = "${login}"`
+    //         await dbObj.create((sql2))
+    //         response.status(200, {message: "Пароль успешно изменен!"}, res)
+    //     }
+    // }else {
+    //     response.status(401, {message: "Ошибка при выполнении операции, обратитесь к администратору"}, res)
+    // }
 }
 
 exports.getRole = async (req, res) => {
