@@ -966,13 +966,17 @@ exports.getAppointedStudentsCurrentGroup = async(req, res) => {
 
 exports.getIomByStudentAndTutor = async(req, res) => {
     try {
+
         const tutorId = req.body.tutor
         const studentId = req.body.student
         const userObj = new DB()
         const tblCollection = tblMethod.tbleCollection(tutorId)
         const sql = `SELECT rsi.iom_id,rsi.status, iom.iom_id, iom.title FROM relationship_student_iom as rsi
-                     INNER JOIN ${tblCollection.iom} as iom WHERE rsi.user_id = "${studentId}"`;
+                     INNER JOIN ${tblCollection.iom} as iom  ON rsi.iom_id = iom.iom_id
+                     WHERE rsi.user_id = "${studentId}"`;
+
         let sqlData = await userObj.create(sql)
+
         if(!sqlData.length) {
             response.status(201, [],res)
         }else {
@@ -982,6 +986,71 @@ exports.getIomByStudentAndTutor = async(req, res) => {
         }
     }catch (e) {
 
+    }
+}
+
+exports.getExercisesByIomId = async(req, res) => {
+    try {
+        const userObj = new DB()
+        const tutorId = req.body.payload.tutorId
+        const iomId = req.body.payload.iomId
+        const tblCollection = tblMethod.tbleCollection(tutorId)
+        let exerciseSql = `SELECT 
+                         t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id
+        FROM ${tblCollection.subTypeTableIom} as t INNER JOIN tag ON t.tag_id = tag.id_tag  WHERE t.iom_id = "${iomId}" ORDER BY tag.id_tag ASC`
+        let exerciseData = await userObj.create(exerciseSql)
+        if(!exerciseData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                exerciseData,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+
+exports.getStatusFinished = async(req, res) => {
+    try {
+        const userObj = new DB()
+        const {tutorId, studentId, iomId} = req.body
+        const tblCollection = tblMethod.tbleCollection(tutorId)
+        let exerciseSql = `SELECT 
+                            t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id
+        FROM ${tblCollection.report} as report  
+        INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
+        INNER JOIN tag ON t.tag_id = tag.id_tag
+        WHERE report.iom_id = "${iomId}" AND report.student_id = "${studentId}"`
+        let exerciseData = await userObj.create(exerciseSql)
+        if(!exerciseData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                exerciseData,res)
+            return true
+        }
+    }catch (e) {
+        return e
     }
 }
 

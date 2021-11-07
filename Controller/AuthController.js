@@ -58,7 +58,7 @@ exports.signup = async (req, res) => {
                 const generationIom = `CREATE TABLE ${tblCollection.iom} (id SERIAL NOT NULL, iom_id VARCHAR(255) NOT NULL, title VARCHAR(255) NOT NULL, description TEXT NULL DEFAULT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = InnoDB`;
                 const generationStudents = `CREATE TABLE ${tblCollection.student} (id SERIAL NOT NULL, student_id VARCHAR(255) NOT NULL , iom_id VARCHAR(255) NOT NULL ) ENGINE = InnoDB`;
                 const generationMentors = `CREATE TABLE ${tblCollection.mentor} (id SERIAL NOT NULL, firstname VARCHAR(255) NOT NULL ,lastname VARCHAR(255) NOT NULL, patronymic VARCHAR(255) DEFAULT NULL, area_id INT NOT NULL, discipline_id INT NOT NULL) ENGINE = InnoDB`;
-                const generationReports = `CREATE TABLE ${tblCollection.report} ( id SERIAL NOT NULL ,iom_id VARCHAR(255) NOT NULL , student_id VARCHAR(255) NOT NULL , exercises_id INT NOT NULL , tag_id INT NOT NULL, link VARCHAR(255) NULL DEFAULT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ) ENGINE = InnoDB`;
+                const generationReports = `CREATE TABLE ${tblCollection.report} ( id SERIAL NOT NULL ,iom_id VARCHAR(255) NOT NULL , student_id VARCHAR(255) NOT NULL , exercises_id INT NOT NULL , tag_id INT NOT NULL, content LONGTEXT NULL DEFAULT NULL, link VARCHAR(255) NULL DEFAULT NULL, file_path VARCHAR(255) NULL DEFAULT NULL, accepted INT NOT NULL DEFAULT '0', created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ) ENGINE = InnoDB`;
                 const generationLibrary = `CREATE TABLE ${tblCollection.library} (id SERIAL NOT NULL, user_id VARCHAR(255) NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , tag_id INT NOT NULL ) ENGINE = InnoDB`;
                 const generationSubtypeIom = `CREATE TABLE ${tblCollection.subTypeTableIom} ( id_exercises SERIAL NOT NULL , iom_id VARCHAR(255) NOT NULL , title VARCHAR(255) NOT NULL , description TEXT NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , mentor INT NOT NULL , term DATE NOT NULL  , tag_id INT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = InnoDB;`
                 await dbObj.create(tutorOptions)
@@ -238,47 +238,45 @@ exports.confirmcode = async (req, res) => {
 }
 
 exports.recovery = async (req, res) => {
-
-    console.log(req.body.recovery)
-    return false
-    if(req.body.recovery){
+    const login  = req.body.recovery.trim()
+    if(login){
         let login = req.body.recovery
         const sql = `SELECT * FROM users WHERE login = "${login}"`;
         const dbObj = new DB()
         let result = await dbObj.create(sql)
 
         if(result.length) {
-            const salt = bcrypt.genSaltSync(10);
-            const hashcode = bcrypt.hashSync(login,salt)
             const checkInRecoveryTbl = `SELECT id FROM recovery WHERE login = "${login}"`
             const result1 = await dbObj.create(checkInRecoveryTbl)
             if(result1.length >1) {
                 response.status(400,{message:'На указанный вами адрес были уже отправлены ссылки для восстановления! Проверьте свою почту. Если вам не пришло письмо с ссылкой для восстановления свяжитесь с администрацией портала'},res)
             }else {
+                const salt = bcrypt.genSaltSync(10);
+                const hashcode = bcrypt.hashSync(login,salt)
                 const insertInrecoveryTbl = "INSERT INTO `recovery` (`login`,`hash`) VALUES ('"+ login + "','" + hashcode + "')";
                 const result2 = await dbObj.create(insertInrecoveryTbl)
                 console.log(result2)
-                let testEmailAccount = await nodemailer.createTestAccount()
-                let transporter = nodemailer.createTransport({
-                    host: 'smtp.gmail.com',
-                    port: 587,
-                    secure: false,
-                    requireTLS: true,
-                    auth: {
-                        user: 'ipkrochr@gmail.com',
-                        pass: '99o99o99o',
-                    },
-                })
-
-                const emailResult = await transporter.sendMail({
-                    from: '"ГБУ ДПО "ИРО ЧР"" ipkrochr@gmail.com',
-                    to: login,
-                    subject: 'Восстановление пароля',
-                    text: 'Здравствуйте!',
-                    html: `<p>Чтобы сбросить пароль от личного кабинета на cnppmpr.ru, перейдите по ссылке </p>
-                    <a href="http://localhost:8080/recovery?link=${hashcode}"`
-                })
-                console.log(emailResult)
+                // let testEmailAccount = await nodemailer.createTestAccount()
+                // let transporter = nodemailer.createTransport({
+                //     host: 'smtp.gmail.com',
+                //     port: 587,
+                //     secure: false,
+                //     requireTLS: true,
+                //     auth: {
+                //         user: 'ipkrochr@gmail.com',
+                //         pass: '99o99o99o',
+                //     },
+                // })
+                //
+                // const emailResult = await transporter.sendMail({
+                //     from: '"ГБУ ДПО "ИРО ЧР"" ipkrochr@gmail.com',
+                //     to: login,
+                //     subject: 'Восстановление пароля',
+                //     text: 'Здравствуйте!',
+                //     html: `<p>Чтобы сбросить пароль от личного кабинета на cnppmpr.ru, перейдите по ссылке </p>
+                //     <a href="http://localhost:8080/recovery?link=${hashcode}"`
+                // // })
+                // console.log(emailResult)
                 response.status(200,{
                     message:'На ваш электронный адрес выслали письмо с ссылкой для подтверждения',
                     code: hashcode

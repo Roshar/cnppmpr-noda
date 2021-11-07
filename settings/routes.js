@@ -68,6 +68,7 @@ module.exports = (app) => {
     app.route('/api/user/getAdminData').post(usersCtrl.getAdminData)
     app.route('/api/user/getFromTutorTbls').post(usersCtrl.getFromTutorTbls)
     app.route('/api/user/updateTutorProfile').post(usersCtrl.updateTutorProfile)
+    app.route('/api/user/updateStudentProfile').post(usersCtrl.updateStudentProfile)
 
     app.route('/api/user/changeAvatar').post(upload.single('file'), usersCtrl.changeAvatar)
 
@@ -94,6 +95,11 @@ module.exports = (app) => {
     app.route('/api/student/getStudentsForTutorWithGenderAndArea').post(studentCtrl.getStudentsForTutorWithGenderAndArea)
     app.route('/api/student/getStudentsForTutorWithGenderAndAreaAndIom').post(studentCtrl.getStudentsForTutorWithGenderAndAreaAndIom)
     app.route('/api/student/getStudentsForTutorWithAreaAndIom').post(studentCtrl.getStudentsForTutorWithAreaAndIom)
+    app.route('/api/student/checkIssetMyIom').post(studentCtrl.checkIssetMyIom)
+    app.route('/api/student/getExercisesFromMyIom').post(studentCtrl.getExercisesFromMyIom)
+    app.route('/api/student/getMyTaskById').post(studentCtrl.getMyTaskById)
+    app.route('/api/student/insertInReportWithoutFile').post(studentCtrl.insertInReportWithoutFile)
+
 
 
 
@@ -136,6 +142,8 @@ module.exports = (app) => {
 
     // getData
     app.route('/api/admin/getUserCount').post(adminCtrl.getUserCount)
+    app.route('/api/admin/getExercisesByIomId').post(adminCtrl.getExercisesByIomId)
+    app.route('/api/admin/getStatusFinished').post(adminCtrl.getStatusFinished)
     app.route('/api/admin/getLastUsers').post(adminCtrl.getLastUsers)
     app.route('/api/admin/getUsersActive').post(adminCtrl.getUsersActive)
     app.route('/api/admin/getUsersWithDisAreaGenderFilter').post(adminCtrl.getUsersWithDisAreaGenderFilter)

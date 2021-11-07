@@ -27,8 +27,21 @@ exports.getUserData = async(req, res) => {
 
         let mainInfoData = {
             student: [
-                `SELECT students.user_id, students.name, students.surname, students.patronymic, students.phone, schools.school_name, area.title_area, discipline.title_discipline FROM students INNER JOIN schools ON students.school_id = schools.id_school INNER JOIN area ON students.area_id = area.id_area INNER JOIN discipline ON students.discipline_id = discipline.id_dis WHERE students.user_id = "${userData[0]['user_id']}"`,
-                `SELECT tutors.user_id, tutors.name, tutors.surname, tutors.patronymic, tutors.phone FROM relationship_tutor_student as rt INNER JOIN tutors ON tutors.user_id = rt.t_user_id WHERE rt.s_user_id = "${userData[0]['user_id']}"`
+                `SELECT students.user_id, students.name, students.surname, students.patronymic, u.login,students.avatar,
+                        students.phone,students.gender, schools.school_name, area.title_area, discipline.title_discipline,
+                          DATE_FORMAT(students.birthday, '%d.%m.%Y') as birthday,
+                        TIMESTAMPDIFF(YEAR, students.birthday, CURDATE()) as age,
+                        DATE_FORMAT(students.birthday, '%Y-%m-%d') as birthdayConvert
+                        FROM students  
+                        INNER JOIN schools ON students.school_id = schools.id_school 
+                        INNER JOIN area ON students.area_id = area.id_area 
+                        INNER JOIN discipline ON students.discipline_id = discipline.id_dis 
+                        INNER JOIN users as u ON students.user_id = u.id_user 
+                        WHERE students.user_id = "${userData[0]['user_id']}"`,
+                `SELECT tutors.user_id, tutors.name, tutors.surname, tutors.patronymic, tutors.phone 
+                        FROM relationship_tutor_student as rt 
+                        INNER JOIN tutors ON tutors.user_id = rt.t_user_id 
+                        WHERE rt.s_user_id = "${userData[0]['user_id']}"`
             ],
             tutor: [
                 `SELECT tutors.user_id,tutors.name, tutors.surname, tutors.patronymic, tutors.phone, tutors.gender, tutors.avatar, 
@@ -44,10 +57,10 @@ exports.getUserData = async(req, res) => {
         let returnData = async (tblName, mysqlAction) => {
             return (tblName) ? await mysqlAction : null
         }
-
         const mainInfo = await returnData(mainInfoData[tblName], userObj.create(mainInfoData[tblName][0]));
         const linkInfo = await returnData(mainInfoData[tblName], userObj.create(mainInfoData[tblName][1]));
         const result = [mainInfo[0],linkInfo[0]]
+        console.log(result)
         if(userData.length <= 0) {
             response.status(401, {message:"пусто"}, res)
         }else {
@@ -121,7 +134,29 @@ exports.updateTutorProfile = async (req, res) => {
             response.status(200,{message:'Ваш профиль обновлен'},res)
         }
     }else {
-        response.status(401,{message:'Ошибка'},res)
+        response.status(400,{message:'Ошибка'},res)
+    }
+}
+
+exports.updateStudentProfile = async (req, res) => {
+    const {name, surname, patronymic, login, birthday, phone, gender, token} = req.body
+
+    const userObj = new DB()
+    const sql = `SELECT * FROM authorization WHERE token_key = "${token}" `
+    const userData = await userObj.create(sql)
+    if (userData.length) {
+        const user = userData[0]['user_id']
+        const sql2 = `UPDATE users SET login = "${login}" WHERE id_user = "${user}"`
+        await userObj.create(sql2)
+        const sql3 = `UPDATE students SET name="${name}", surname="${surname}",
+                      patronymic = "${patronymic}", phone = "${phone}",
+                       birthday = "${birthday}", gender="${gender}" WHERE user_id = "${user}"`
+        const result =  await userObj.create(sql3)
+        if(result.affectedRows) {
+            response.status(200,{message:'Ваш профиль обновлен'},res)
+        }
+    }else {
+        response.status(400,{message:'Ошибка'},res)
     }
 
 }

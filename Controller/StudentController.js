@@ -429,3 +429,153 @@ exports.getStudentsForTutorWithGenderAndIom = async(req, res) => {
         return e
     }
 }
+
+exports.checkIssetMyIom = async(req, res) => {
+    try {
+        const userObj = new DB()
+
+        const studentId = req.body.studentId
+        const tutorId = req.body.tutorId
+        const tblCollection = tblMethod.tbleCollection(tutorId)
+        let iomSql = ` SELECT rsi.iom_id,iom.title FROM 
+                        relationship_student_iom as rsi 
+                        INNER JOIN ${tblCollection.iom}  as iom
+                        ON  rsi.iom_id = iom.iom_id
+                        WHERE rsi.user_id = "${studentId}"
+                        AND rsi.tutor_id = "${tutorId}"`
+
+        let result = await userObj.create(iomSql)
+
+        if(!result.length) {
+            response.status(200, [],res)
+        }else {
+            response.status(200,
+                result,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+
+//получаем все задания из назначенного иома | профиль студент
+exports.getExercisesFromMyIom = async(req, res) => {
+    try {
+        const userObj = new DB()
+        const {iomId, tutorId} = req.body
+        const tblCollection = tblMethod.tbleCollection(tutorId)
+        let iomSql = ` SELECT sub.id_exercises, sub.iom_id,sub.mentor, sub.title, sub.description, 
+                              DATE_FORMAT(sub.term, '%d.%m.%Y') as term, 
+                              sub.tag_id, sub.link, t.id_tag,t.title_tag
+                        FROM ${tblCollection.subTypeTableIom} as sub 
+                        INNER JOIN tag as t ON sub.tag_id = t.id_tag 
+                        WHERE sub.iom_id = "${iomId}"`
+        let result = await userObj.create(iomSql)
+        let distinct = `SELECT DISTINCT sub.tag_id,t.title_tag  FROM ${tblCollection.subTypeTableIom} as sub
+                        INNER JOIN tag as t ON sub.tag_id = t.id_tag  
+                        WHERE sub.iom_id = "${iomId}"`
+        let result2 = await userObj.create(distinct)
+        const dataResult = [result,result2]
+        if(!result.length) {
+            response.status(200, [],res)
+        }else {
+            response.status(200,
+                dataResult,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+
+exports.getMyTaskById = async(req, res) => {
+
+    try {
+        const iomId = req.body.iomId
+        const taskId = req.body.taskId
+        const token = req.body.token
+        const userObj = new DB()
+        const id = await userId(token)
+        const studentId = id[0]['user_id']
+        const accessSQl = `SELECT tutor_id FROM relationship_student_iom WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`
+        let access = await userObj.create(accessSQl)
+        if(access.length) {
+            const tblCollection = tblMethod.tbleCollection(access[0]['tutor_id'])
+            const tbl = tblCollection.subTypeTableIom
+            let taskSql = `SELECT    
+                            t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id FROM ${tbl} as t INNER JOIN tag ON t.tag_id = tag.id_tag WHERE t.iom_id = "${iomId}" AND t.id_exercises = "${taskId}"`
+            let taskData = await userObj.create(taskSql)
+            if(!taskData.length) {
+                response.status(201, {},res)
+            }else {
+                response.status(200,
+                    taskData[0],res)
+                return true
+            }
+        }else {
+            response.status(404, {},res)
+        }
+
+
+
+
+    }catch (e) {
+        return e
+    }
+}
+
+exports.insertInReportWithoutFile = async(req, res) => {
+    try {
+        const iomId = req.body.iomId
+        const taskId = req.body.taskId
+        const token = req.body.token
+        const link = req.body.link.trim()
+        const content = req.body.content.trim().replace(/<[^>]*>?/gm, '');
+        const category = req.body.category
+        const userObj = new DB()
+        const id = await userId(token)
+        const studentId = id[0]['user_id']
+        const accessSQl = `SELECT tutor_id FROM relationship_student_iom WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`
+        let access = await userObj.create(accessSQl)
+        if(access.length) {
+            const tblCollection = tblMethod.tbleCollection(access[0]['tutor_id'])
+            const tbl = tblCollection.report
+            const checkIssetReport = `SELECT id FROM ${tbl} WHERE exercises_id =${taskId} AND iom_id = "${iomId}" AND student_id = "${studentId}"`
+            let checkData = await userObj.create(checkIssetReport)
+            if(!checkData.length) {
+                const taskSql = `INSERT INTO ${tbl} (iom_id, student_id, exercises_id, tag_id, content, link) VALUES ("${iomId}","${studentId}",${taskId},${category}, "${content}","${link}")`
+                let taskData = await userObj.create(taskSql)
+                if(!taskData.insertId) {
+                    response.status(400, {message: 'Возникла временная ошибка, обратитесь к тьютору'},res)
+                }else {
+                    response.status(200,
+                        {message: 'Ваш ответ принят'},res)
+                    return true
+                }
+            }else {
+                response.status(201, {message: 'Вы уже отправили отчет по этому заданию'},res)
+            }
+
+
+        }else {
+            response.status(404, {},res)
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+
+
