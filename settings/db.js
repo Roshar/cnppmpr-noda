@@ -1,7 +1,7 @@
 
 const mysql = require('mysql2/promise');
 const env = require('./../dbenv')
-
+console.log(env)
 class DB {
     async create(sql,parameters=[]) {
         try{
