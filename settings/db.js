@@ -7,7 +7,7 @@ class DB {
         try{
             this.dbh = await mysql.createConnection({
                 host:env.HOST,
-                // socketPath: env.SOCKET,
+                socketPath: env.SOCKET,
                 port: env.PORT,
                 user: env.DB_USER,
                 password: env.DB_PASSWORD,
