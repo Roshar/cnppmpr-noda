@@ -24,7 +24,6 @@ exports.getUserCount = async(req,res) => {
 
 exports.getLastUsers = async (req, res) => {
     try {
-
         const tblName = req.body.tbl
         const userObj = new DB()
         let sqlData;

@@ -1,15 +1,15 @@
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
-const passport = require('passport')
+// const passport = require('passport')
 const cors = require('cors')
 const PORT = process.env.PORT || 3500
 app.use(bodyParser.json({limit: '50mb'}))
 app.use(bodyParser.urlencoded({limit: '50mb',extended:true}))
-app.use(passport.initialize())
+// app.use(passport.initialize())
 app.use(cors())
 app.use(express.static(__dirname + '/uploads/avatar'))
-require('./middleware/passport')(passport)
+// require('./middleware/passport')(passport)
 const routes = require('./settings/routes')
 routes(app)
 app.listen(PORT, ()=> {
