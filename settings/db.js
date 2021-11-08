@@ -1,5 +1,5 @@
 
-const mysql = require('mysql2/promise');
+const mysql = require('mysql2');
 const env = require('./../dbenv')
 console.log(env)
 class DB {
