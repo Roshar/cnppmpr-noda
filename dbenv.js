@@ -13,7 +13,7 @@
 module.exports = {
     HOST:"https://govzalla.beget.tech",
     DB_USER: 'govzalla_it_cnpp',
-    DB_PASSWORD: '1234567890',
+    DB_PASSWORD: '2404141rA!!',
     DB_NAME: 'crm',
     jwt: 'bearer'
 }
