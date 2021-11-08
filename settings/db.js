@@ -6,12 +6,10 @@ class DB {
     async create(sql,parameters=[]) {
         try{
             this.dbh = await mysql.createConnection({
-                host:env.HOST,
-                //socketPath: env.SOCKET,
-                //port: env.PORT,
-                user: env.DB_USER,
-                password: env.DB_PASSWORD,
-                database: env.DB_NAME
+                host: "govzalla.beget.tech",
+                user: "govzalla_it_cnpp",
+                password: "2404141rA!!",
+                database: "govzalla_it_cnpp"
             });
             const [res] = await this.dbh.execute(sql, parameters)
             await this.dbh.end()
