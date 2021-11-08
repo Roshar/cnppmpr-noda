@@ -73,10 +73,10 @@ exports.getUserData = async(req, res) => {
 }
 
 exports.getAllUsers = async (req, res) => {
+    console.log('back')
     const dbObj = new DB()
     const sql = 'SELECT * FROM `users`'
     const rows = await dbObj.create(sql)
-    // console.log(rows)
     if(rows){
         response.status(200,rows,res)
     }else {

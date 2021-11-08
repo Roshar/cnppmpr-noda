@@ -1034,7 +1034,7 @@ exports.getStatusFinished = async(req, res) => {
                             t.link,
                             t.mentor,
                             tag.id_tag,
-                            tag.title_tag,
+                            tag.title_tag,  
                             DATE_FORMAT(t.term, '%d.%m.%Y') as term,
                             t.tag_id
         FROM ${tblCollection.report} as report  

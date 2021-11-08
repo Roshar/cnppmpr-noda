@@ -28,9 +28,7 @@ module.exports = (app) => {
     const studentCtrl = require('../Controller/StudentController')
 
     // get all users from tbl user
-    app.route('/api/users').get(passport.authenticate('jwt',{
-            session: false
-        }),usersCtrl.getAllUsers)
+    app.route('/api/users').post(usersCtrl.getAllUsers)
 
     //registration
     app.route('/api/auth/signup').post(authCtrl.signup)
