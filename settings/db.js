@@ -1,10 +1,11 @@
 
 const mysql = require('mysql2');
 const env = require('./../dbenv')
-console.log(env)
+
 class DB {
     async create(sql,parameters=[]) {
         try{
+            console.log(111)
             this.dbh = await mysql.createConnection({
                 host: "govzalla.beget.tech",
                 user: "govzalla_it_cnpp",
