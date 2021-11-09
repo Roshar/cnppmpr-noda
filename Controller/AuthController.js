@@ -154,9 +154,11 @@ exports.singin = async (req, res) => {
 
 exports.logout = async (req, res) => {
     try{
+        console.log('Выход')
         const token = req.body.token
         const sql = 'DELETE FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
         const [rows] = await req.db.execute(sql)
+        console.log(rows)
         response.status(200, {"result":rows}, res)
     } catch (e) {
         console.log("Ошибка при выходе")

@@ -7,19 +7,19 @@ class DB {
         return mysql.createConnection({
 
             //ВНЕШНЯ БАЗА НА БЕГЕТ
-            // host: "govzalla.beget.tech",
-            // user: "govzalla_it_cnpp",
-            // password: "2404141rA!!",
-            // database: "govzalla_it_cnpp"
+            host: "govzalla.beget.tech",
+            user: "govzalla_it_cnpp",
+            password: "2404141rA!!",
+            database: "govzalla_it_cnpp"
 
-            host: "localhost",
-            user: "root",
-            password: "1234567890",
-            database: "srm"
-
-
+            // host: "localhost",
+            // user: "root",
+            // password: "1234567890",
+            // database: "srm"
 
 
+
+                //
                 // host:env.HOST,
                 // socketPath: env.SOCKET,
                 // port: env.PORT,

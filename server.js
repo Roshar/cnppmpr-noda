@@ -1,6 +1,6 @@
 const express = require('express')
 const cors = require('cors')
-const PORT = process.env.PORT || 3500
+const PORT = process.env.PORT || 8088
 const db = require('./settings/db')
 
 db.connect().then((dbh) => {
