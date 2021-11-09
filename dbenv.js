@@ -11,7 +11,7 @@
 
 module.exports = {
     HOST:"localhost",
-    PORT: 8899,
+    PORT: 8081,
     DB_USER: 'root',
     DB_PASSWORD: '1234567890',
     DB_NAME: 'srm',
