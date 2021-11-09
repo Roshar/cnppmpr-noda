@@ -5,10 +5,20 @@ const env = require('./../dbenv')
 class DB {
     static connect() {
         return mysql.createConnection({
-            host: "govzalla.beget.tech",
-            user: "govzalla_it_cnpp",
-            password: "2404141rA!!",
-            database: "govzalla_it_cnpp"
+
+            //ВНЕШНЯ БАЗА НА БЕГЕТ
+            // host: "govzalla.beget.tech",
+            // user: "govzalla_it_cnpp",
+            // password: "2404141rA!!",
+            // database: "govzalla_it_cnpp"
+
+            host: "localhost",
+            user: "root",
+            password: "1234567890",
+            database: "srm"
+
+
+
 
                 // host:env.HOST,
                 // socketPath: env.SOCKET,
