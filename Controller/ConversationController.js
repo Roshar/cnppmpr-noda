@@ -9,15 +9,14 @@ exports.send = async(req,res) => {
         const {sendBody, token, targetUserId, link = ''} = req.body
         const senderId = await userId(token)
         const links = (link !== '') ? link : null
-        const userObj = new DB()
         let conId;
-        let result2;
+
         const checkIssetConversation = `SELECT id FROM conversation WHERE source_user_id = "${senderId[0]['user_id']}" AND target_user_id = "${targetUserId}" `
-        const check = await userObj.create(checkIssetConversation)
+        const [check] = await req.db.execute(checkIssetConversation)
         if(!check.length) {
             const sql = `INSERT INTO conversation (source_user_id, target_user_id)
                     VALUES ("${senderId[0]['user_id']}", "${targetUserId}")`
-            let result1 = await userObj.create(sql)
+            const [result1] = await req.db.execute(sql)
             conId = result1.insertId
         }else {
             conId = check[0]['id']
@@ -26,18 +25,18 @@ exports.send = async(req,res) => {
         if(conId) {
             const sql = `INSERT INTO conversation_room (con_id, source_user, target_user, body, link)
                         VALUES (${conId},"${senderId[0]['user_id']}", "${targetUserId}", "${sendBody}", "${links}")`
-            console.log(sql)
-            result2 = await userObj.create(sql)
-        }
-        console.log(result2)
-
-        if(!result2.insertId) {
-            response.status(201, {message:'Ошибка при отправке сообщения. Обратитесь к разработчикам'},res)
+            let [result2] = await req.db.execute(sql)
+            if(!result2.insertId) {
+                response.status(201, {message:'Ошибка при отправке сообщения. Обратитесь к разработчикам'},res)
+            }else {
+                response.status(200,
+                    {message:'Сообщение отправлено!'},res)
+                return true
+            }
         }else {
-            response.status(200,
-                {message:'Сообщение отправлено!'},res)
-            return true
+            response.status(201, {message:'Ошибка при отправке сообщения. Обратитесь к разработчикам'},res)
         }
+
     }catch (e) {
 
     }
@@ -47,11 +46,8 @@ exports.send = async(req,res) => {
 exports.getCompanions = async(req,res) => {
     try {
         const token = req.body.token
-        const senderId = await userId(token)
-        const userObj = new DB()
-        let tutorsData;
-        let adminsData;
-        let studentsData;
+        const senderId = await userId(req.db,token)
+
         let sqlStudents =
             `SELECT c.id, c.source_user_id, c.target_user_id,
              DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
@@ -62,7 +58,8 @@ exports.getCompanions = async(req,res) => {
              ON c.target_user_id = s.user_id
              INNER JOIN users as u ON c.target_user_id = u.id_user
              WHERE c.source_user_id = "${senderId[0]['user_id']}" ORDER BY c.id DESC`
-        studentsData = await userObj.create(sqlStudents)
+        let [studentsData] = await req.db.execute(sqlStudents)
+
         let sqTutors =
             `SELECT c.id, c.source_user_id, c.target_user_id,
              DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
@@ -72,7 +69,8 @@ exports.getCompanions = async(req,res) => {
              INNER JOIN tutors as s ON c.target_user_id = s.user_id
              INNER JOIN users as u ON c.target_user_id = u.id_user
              WHERE c.source_user_id = "${senderId[0]['user_id']}" `
-        tutorsData = await userObj.create(sqTutors)
+        let [tutorsData] = await req.db.execute(sqTutors)
+
         let sqAdmins =
             `SELECT c.id, c.source_user_id, c.target_user_id,
              DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
@@ -82,7 +80,8 @@ exports.getCompanions = async(req,res) => {
              INNER JOIN admins as s ON c.target_user_id = s.user_id
              INNER JOIN users as u ON c.target_user_id = u.id_user
              WHERE c.source_user_id = "${senderId[0]['user_id']}" `
-        adminsData = await userObj.create(sqAdmins)
+
+        let [adminsData] = await req.db.execute(sqAdmins)
         if(!studentsData.length ) {
             response.status(201, {},res)
         }else {
@@ -98,12 +97,12 @@ exports.getCompanions = async(req,res) => {
 
 exports.getChat = async(req,res) => {
     try {
-        const userObj = new DB()
+
         const token = req.body.token
         const addressee = req.body.user
-        const senderId = await userId(token)
+        const senderId = await userId(req.db,token)
         const addresseeSql = `SELECT role FROM users WHERE id_user = "${addressee}"`
-        const addresseeRole = await userObj.create(addresseeSql)
+        const [addresseeRole] = await req.db.execute(addresseeSql)
         const addresseeTbl = tbl(addresseeRole[0]['role'])
         const tblName = tbl(senderId[0]['role'])
 
@@ -113,19 +112,18 @@ exports.getChat = async(req,res) => {
                                 INNER JOIN users as u ON t.user_id = u.id_user 
                                 WHERE t.user_id = "${addressee}"`
 
-        const senderData = await userObj.create(senderSql)
-        const addresseeData = await userObj.create(addresseeSql2)
+        const [senderData] = await req.db.execute(senderSql)
+        const [addresseeData] = await req.db.execute(addresseeSql2)
 
         const conversationId = req.body.conId
 
-        let chatData;
         let sqlChat =
             `SELECT c.id, c.source_user, c.target_user, c.body,
              DATE_FORMAT(c.created_date, '%d-%m-%Y %H:%i:%s') as created_date
              FROM conversation_room as c
              WHERE c.con_id = ${conversationId}`
 
-        chatData = await userObj.create(sqlChat)
+        let [chatData] = await req.db.execute(sqlChat)
 
         if(!chatData.length ) {
             response.status(201, {},res)
@@ -153,8 +151,6 @@ exports.searchUser = async (req, res) => {
     try {
         const tblName = req.body.tbl
         const param = req.body.searchValue
-        const userObj = new DB()
-        let sqlData
         let sql
         if(param) {
             sql =  `SELECT tbl.id, tbl.user_id, tbl.name, tbl.surname, tbl.avatar,
@@ -163,34 +159,40 @@ exports.searchUser = async (req, res) => {
              INNER JOIN users as u
              ON tbl.user_id = u.id_user
              WHERE u.status = 'on' AND (tbl.name LIKE "${param}%" OR tbl.surname LIKE "${param}%") LIMIT 10`
-            sqlData = await userObj.create(sql)
-        }
-        if(!sqlData.length) {
-            response.status(201, {},res)
+            let [sqlData] =  await req.db.execute(sql)
+            if(!sqlData.length) {
+                response.status(201, {},res)
+            }else {
+                response.status(200,
+                    sqlData,res)
+                return true
+            }
         }else {
-            response.status(200,
-                sqlData,res)
-            return true
+            response.status(201, {},res)
         }
+
     }catch (e) {
 
     }
 }
 
+
+
 // создаем беседу
 exports.createConversationWithoutInsert = async(req, res) => {
     try {
-        console.log(req.body)
+
         const {token, targetUserId} = req.body
-        const senderId = await userId(token)
-        const userObj = new DB()
+        const senderId = await userId(req.db,token)
+
         let conId;
         const checkIssetConversation = `SELECT id FROM conversation WHERE source_user_id = "${senderId[0]['user_id']}" AND target_user_id = "${targetUserId}" `
-        const check = await userObj.create(checkIssetConversation)
+        const [check] =  await req.db.execute(checkIssetConversation)
+
         if(!check.length) {
             const sql = `INSERT INTO conversation (source_user_id, target_user_id)
                     VALUES ("${senderId[0]['user_id']}", "${targetUserId}")`
-            let result1 = await userObj.create(sql)
+            let [result1] =  await req.db.execute(sql)
             conId = result1.insertId
         }else {
             conId = check[0]['id']

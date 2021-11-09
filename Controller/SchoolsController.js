@@ -6,9 +6,10 @@ const DB = require('./../settings/db')
 
 exports.getSchoolsByAreaId = async(req, res) => {
     try {
-        const schoolsObj = new DB()
+
         const sql = "SELECT * FROM schools WHERE area_id =" + req.body.id
-        const schools = await schoolsObj.create(sql)
+        const [schools] = await req.db.execute(sql)
+
         if(schools.length <= 0) {
             response.status(401, {message:"пусто"},res)
         }else {
@@ -23,9 +24,9 @@ exports.getSchoolsByAreaId = async(req, res) => {
 
 exports.getAreas = async(req, res) => {
     try {
-        const schoolsObj = new DB()
+
         const sql = "SELECT * FROM area"
-        const areas = await schoolsObj.create(sql)
+        const [areas] = await req.db.execute(sql)
         if(areas.length <= 0) {
             response.status(401, {message:"пусто"},res)
         }else {

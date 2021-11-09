@@ -18,8 +18,7 @@ exports.signup = async (req, res) => {
         let sqlOption;
         let sqlFail;
         const sql = `SELECT * FROM users WHERE login = "${login}"`;
-        const dbObj = new DB()
-        let result = await dbObj.create(sql)
+        let [result] = await req.db.execute(sql)
 
         if (result.length) {
             response.status(401, {message:`Пользователь с таким email - ${login} уже зарегистрирован!`}, res)
@@ -44,12 +43,13 @@ exports.signup = async (req, res) => {
                 sqlOption = "INSERT INTO `students`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`area_id`,`school_id`,`gender`,`birthday`, `avatar`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + area + "','" + school + "','" + gender + "','" + birthday + "','" + avatar + "')";
             }
             let sqlUser = "INSERT INTO `users`(`id_user`,`login`,`password`,`role`) VALUES ('" + id_user + "','" + login + "','" + hashPass + "','" + role + "')";
-            let result  = await dbObj.create(sqlUser)
-            let result2  = await dbObj.create(sqlOption)
+            let [result]  = await req.db.execute(sqlUser)
+            let [result2]  = await req.db.execute(sqlOption)
 
             if(role === "student") {
                 const insertSql = "INSERT INTO `admin_student_iom_status`(`student_id`) VALUES ('" + id_user + "')";
-                await dbObj.create(insertSql)
+                await req.db.execute(insertSql)
+
             }
 
             if(role === "tutor") {
@@ -61,13 +61,16 @@ exports.signup = async (req, res) => {
                 const generationReports = `CREATE TABLE ${tblCollection.report} ( id SERIAL NOT NULL ,iom_id VARCHAR(255) NOT NULL , student_id VARCHAR(255) NOT NULL , exercises_id INT NOT NULL , tag_id INT NOT NULL, content LONGTEXT NULL DEFAULT NULL, link VARCHAR(255) NULL DEFAULT NULL, file_path VARCHAR(255) NULL DEFAULT NULL, accepted INT NOT NULL DEFAULT '0', created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ) ENGINE = InnoDB`;
                 const generationLibrary = `CREATE TABLE ${tblCollection.library} (id SERIAL NOT NULL, user_id VARCHAR(255) NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , tag_id INT NOT NULL ) ENGINE = InnoDB`;
                 const generationSubtypeIom = `CREATE TABLE ${tblCollection.subTypeTableIom} ( id_exercises SERIAL NOT NULL , iom_id VARCHAR(255) NOT NULL , title VARCHAR(255) NOT NULL , description TEXT NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , mentor INT NOT NULL , term DATE NOT NULL  , tag_id INT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = InnoDB;`
-                await dbObj.create(tutorOptions)
-                await dbObj.create(generationIom)
-                await dbObj.create(generationStudents)
-                await dbObj.create(generationMentors)
-                await dbObj.create(generationReports)
-                await dbObj.create(generationLibrary)
-                await dbObj.create(generationSubtypeIom)
+
+                await req.db.execute(tutorOptions)
+                await req.db.execute(generationIom)
+                await req.db.execute(generationStudents)
+                await req.db.execute(generationMentors)
+                await req.db.execute(generationReports)
+                await req.db.execute(generationLibrary)
+                await req.db.execute(generationSubtypeIom)
+
+
             }
 
             if(result && result2){
@@ -75,7 +78,7 @@ exports.signup = async (req, res) => {
             }else{
                 if(result){
                     sqlFail = `DELETE FROM users WHERE login = "${login}"`
-                    await dbObj.create(sqlFail)
+                    await req.db.execute(sqlFail)
                 }
                 response.status(400,{message:'Не получилось зарегистрировать пользователя!'},res)
             }
@@ -89,10 +92,7 @@ exports.singin = async (req, res) => {
     try {
         const {login, password} = req.body
         const sql = `select id, id_user, login, password, role, status from users where login = "${login}"`;
-        const obj = new DB()
-        const rows = await obj.create(sql)
-
-
+        const [rows] = await req.db.execute(sql)
         const nets = networkInterfaces();
         const address = Object.create(null); // Or just '{}', an empty object
 
@@ -127,7 +127,9 @@ exports.singin = async (req, res) => {
                     const online = 'online'
                     const ip = address['en0']
                     const sql2 = "INSERT INTO `authorization`(`token_key`,`login`,`user_id`,`role`,`status`,`status_network`,`ip_address`) VALUES ('" + `Bearer ${token}` + "','" + rows[0].login + "','" + rows[0]['id_user'] + "','" + rows[0].role + "','" + rows[0].status + "','" + online +"','" + ip +"')"
-                    const row2 = await obj.create(sql2)
+                    const [row2] = await req.db.execute(sql2)
+
+
                     if(!row2){
                         response.status(400,{message:'Ошибка при авторизации, попробуйте снова'},res)
                         return false
@@ -154,8 +156,7 @@ exports.logout = async (req, res) => {
     try{
         const token = req.body.token
         const sql = 'DELETE FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
-        const obj = new DB()
-        const rows = await obj.create(sql)
+        const [rows] = await req.db.execute(sql)
         response.status(200, {"result":rows}, res)
     } catch (e) {
         console.log("Ошибка при выходе")
@@ -167,8 +168,7 @@ exports.sendCodeToMail = async(req, res) => {
 
     try {
         const sql = 'SELECT login, token_key FROM `authorization` WHERE token_key = "'+  token + '"'
-        const dbObj = new DB()
-        const result = await dbObj.create(sql)
+        const [result] = await req.db.execute(sql)
         if(result) {
             const login = result[0].login
             let testEmailAccount = await nodemailer.createTestAccount()
@@ -184,7 +184,6 @@ exports.sendCodeToMail = async(req, res) => {
             })
 
             const code = await Math.floor(Math.random() * (9999 - 1000 + 1)) + 1000;
-            // console.log('code ' + code)
             const coder = code + 'r'
             const salt = bcrypt.genSaltSync(10);
             const hashcode = bcrypt.hashSync(coder,salt)
@@ -216,15 +215,14 @@ exports.confirmcode = async (req, res) => {
     const match = bcrypt.compareSync(code, hash)
 
     if(match) {
-        const dbObj = new DB()
         const sql1 = 'SELECT login FROM `authorization` where `token_key` = "' + token + '"';
-        const result = await dbObj.create(sql1)
+        const [result] = await req.db.execute(sql1)
 
         if(result) {
             const sql2  = 'UPDATE `users` SET `status`= "on" WHERE `login` = "' + result[0].login +'"';
             const sql3  = 'UPDATE `authorization` SET `status`= "on" WHERE `login` = "' + result[0].login +'"';
-            const res2 = await dbObj.create(sql2)
-            const res3 = await dbObj.create(sql3)
+            const [res2] = await req.db.execute(sql2)
+            const [res3] = await req.db.execute(sql3)
             if(!res2 || !res3) {
                 console.log('Неизвестная ошибка 2 уровня')
             }
@@ -242,8 +240,7 @@ exports.recovery = async (req, res) => {
     if(login){
         let login = req.body.recovery
         const sql = `SELECT * FROM users WHERE login = "${login}"`;
-        const dbObj = new DB()
-        let result = await dbObj.create(sql)
+        let [result] = await req.db.execute(sql)
 
         if(result.length) {
             const checkInRecoveryTbl = `SELECT id FROM recovery WHERE login = "${login}"`
@@ -254,7 +251,7 @@ exports.recovery = async (req, res) => {
                 const salt = bcrypt.genSaltSync(10);
                 const hashcode = bcrypt.hashSync(login,salt)
                 const insertInrecoveryTbl = "INSERT INTO `recovery` (`login`,`hash`) VALUES ('"+ login + "','" + hashcode + "')";
-                const result2 = await dbObj.create(insertInrecoveryTbl)
+                const [result2] = await req.db.execute(insertInrecoveryTbl)
                 console.log(result2)
                 // let testEmailAccount = await nodemailer.createTestAccount()
                 // let transporter = nodemailer.createTransport({
@@ -292,12 +289,10 @@ exports.recoverychecklink = async (req, res) => {
     if(req.body.link){
         let link = req.body.link
         const sql = `SELECT * FROM recovery WHERE hash = "${link}"`;
-        const dbObj = new DB()
-        let result = await dbObj.create(sql)
-        console.log(sql)
+        let [result] = await req.db.execute(sql)
         if(result.length) {
             const recoverySql = `DELETE FROM recovery WHERE hash = "${link}"`  ;
-            const result2 = await dbObj.create(recoverySql)
+            const [result2] = await req.db.execute(recoverySql)
             response.status(200,{
                 message:'Придумайте новый пароль',
                 code: true
@@ -312,22 +307,21 @@ exports.changepassword = async (req, res) => {
     const {login, password, confirmPassword} = req.body
     console.log(req.body)
     return false
-    // if(login){
-    //     if(password != confirmPassword){
-    //         response.status(401, {message:`Пользователь с таким email - ${login} уже зарегистрирован!`}, res)
-    //     }else {
-    //         const salt = bcrypt.genSaltSync(10);
-    //         const hashPass = bcrypt.hashSync(password,salt)
-    //         const sql = `UPDATE users SET password = "${hashPass}"  WHERE login =  "${login}" `;
-    //         const dbObj = new DB()
-    //         await dbObj.create(sql)
-    //         const sql2 = `DELETE FROM recovery WHERE login = "${login}"`
-    //         await dbObj.create((sql2))
-    //         response.status(200, {message: "Пароль успешно изменен!"}, res)
-    //     }
-    // }else {
-    //     response.status(401, {message: "Ошибка при выполнении операции, обратитесь к администратору"}, res)
-    // }
+    if(login){
+        if(password != confirmPassword){
+            response.status(401, {message:`Пользователь с таким email - ${login} уже зарегистрирован!`}, res)
+        }else {
+            const salt = bcrypt.genSaltSync(10);
+            const hashPass = bcrypt.hashSync(password,salt)
+            const sql = `UPDATE users SET password = "${hashPass}"  WHERE login =  "${login}" `;
+            await req.db.execute(sql)
+            const sql2 = `DELETE FROM recovery WHERE login = "${login}"`
+            await req.db.execute(sql2)
+            response.status(200, {message: "Пароль успешно изменен!"}, res)
+        }
+    }else {
+        response.status(401, {message: "Ошибка при выполнении операции, обратитесь к администратору"}, res)
+    }
 }
 
 exports.getRole = async (req, res) => {
@@ -335,11 +329,12 @@ exports.getRole = async (req, res) => {
         const token = req.body.token
         const sql = `SELECT role, status, login FROM authorization WHERE token_key = "${token}"`
         let sql2;
-        const obj = new DB()
-        const rows = await obj.create(sql)
+
+        const [rows] = await req.db.execute(sql)
+        console.log(rows)
         if(rows.length) {
             sql2 = `UPDATE users SET auth_update = NOW() WHERE login = "${rows[0].login}"`
-            await obj.create(sql2)
+            await req.db.execute(sql2)
             response.status(200,{
                 role: rows[0].role,
                 status:rows[0].status }, res)

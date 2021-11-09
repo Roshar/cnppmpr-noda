@@ -1,17 +1,23 @@
 const express = require('express')
-const app = express()
-const bodyParser = require('body-parser')
-// const passport = require('passport')
 const cors = require('cors')
 const PORT = process.env.PORT || 3500
-app.use(bodyParser.json({limit: '50mb'}))
-app.use(bodyParser.urlencoded({limit: '50mb',extended:true}))
-// app.use(passport.initialize())
-app.use(cors())
-app.use(express.static(__dirname + '/uploads/avatar'))
-// require('./middleware/passport')(passport)
-const routes = require('./settings/routes')
-routes(app)
-app.listen(PORT, ()=> {
-    console.log(`App listen on ${PORT}`)
+const db = require('./settings/db')
+
+db.connect().then((dbh) => {
+    const app = express()
+    app.use((req, res, next) => {
+        req.db = dbh;
+        next()
+    })
+    app.use(express.json({limit: '50mb'}))
+    app.use(express.urlencoded({limit: '50mb',extended:true}))
+    app.use(cors())
+    app.use(express.static(__dirname + '/uploads/avatar'))
+    const routes = require('./settings/routes')
+    routes(app)
+    app.listen(PORT, ()=> {
+        console.log(`App listen on ${PORT}`)
+    })
 })
+
+
