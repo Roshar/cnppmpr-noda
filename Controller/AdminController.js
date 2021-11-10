@@ -162,6 +162,7 @@ exports.getProfile = async (req, res) => {
 
 exports.getDependenciesStudent = async (req, res) => {
     try {
+        console.log(req.body)
         const userId = req.body.userId
         let sql =  `SELECT rts.group_id, rts.s_user_id, rts.t_user_id, t.name, t.surname, t.patronymic, t.discipline_id,
                     g.title
@@ -170,6 +171,7 @@ exports.getDependenciesStudent = async (req, res) => {
                     INNER JOIN groups as g ON rts.group_id = g.id
                     WHERE s_user_id = "${userId}"`
         let [sqlData] = await req.db.execute(sql)
+        console.log(sqlData)
 
         if(!sqlData.length) {
             response.status(201, [],res)
