@@ -169,7 +169,7 @@ exports.getDependenciesStudent = async (req, res) => {
                     g.title
                     FROM relationship_tutor_student as rts
                     INNER JOIN tutors as t ON rts.t_user_id = t.user_id
-                    INNER JOIN groups as g ON rts.group_id = g.id
+                    INNER JOIN groups_ as g ON rts.group_id = g.id
                     WHERE s_user_id = "${userId}"`
         console.log(sql)
         let [sqlData] = await req.db.execute(sql)
@@ -771,7 +771,7 @@ exports.createGroup = async(req, res) => {
         const tutorId = req.body.tutor
         const title = req.body.title
         const description = req.body.description
-        const insertSqlG = `INSERT INTO groups (title, description) VALUES ("${title}", "${description}")`
+        const insertSqlG = `INSERT INTO groups_ (title, description) VALUES ("${title}", "${description}")`
         let insertSqlGR;
 
         const [result] = await req.db.execute(insertSqlG)
@@ -799,7 +799,7 @@ exports.deleteGroup = async(req, res) => {
         const sql = `SELECT COUNT(id) as id FROM relationship_tutor_student WHERE group_id = ${id}`
         const [result] = await req.db.execute(sql)
         if(!result[0].id) {
-            const sql2 = `DELETE FROM groups WHERE id = ${id}`
+            const sql2 = `DELETE FROM groups_ WHERE id = ${id}`
             const [result2] = await req.db.execute(sql2)
             const sql3 = `DELETE FROM groups_relationship WHERE group_id = ${id}`
             await req.db.execute(sql3)
@@ -860,7 +860,7 @@ exports.addUserInGroupAndTutor = async(req, res) => {
 exports.getGroups = async(req,res) => {
     try {
         let sql = `SELECT g.id, g.title, g.description, DATE_FORMAT(g.created_at, '%d.%m.%Y %H:%i') as created_at, gr.tutor_id, t.name, t.surname, t.patronymic, d.title_discipline
-                   FROM groups as g 
+                   FROM groups_ as g 
                    INNER JOIN groups_relationship as gr ON g.id = gr.group_id
                    INNER JOIN tutors as t ON gr.tutor_id = t.user_id
                    INNER JOIN discipline as d ON t.discipline_id = d.id_dis`
@@ -881,7 +881,7 @@ exports.getGroupById =  async(req,res) => {
     try {
         const groupId = req.body.groupId
         let sql = `SELECT g.id, g.title, g.description, DATE_FORMAT(g.created_at, '%d.%m.%Y %H:%i') as created_at, gr.tutor_id, t.name, t.surname, t.patronymic, d.title_discipline, d.id_dis
-                   FROM groups as g 
+                   FROM groups_ as g 
                    INNER JOIN groups_relationship as gr ON g.id = gr.group_id
                    INNER JOIN tutors as t ON gr.tutor_id = t.user_id
                    INNER JOIN discipline as d ON t.discipline_id = d.id_dis WHERE g.id = ${groupId}`
@@ -974,7 +974,6 @@ exports.getExercisesByIomId = async(req, res) => {
         return e
     }
 }
-
 
 exports.getStatusFinished = async(req, res) => {
     try {
