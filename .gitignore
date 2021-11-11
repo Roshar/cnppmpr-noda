@@ -3,6 +3,7 @@ node_modules
 /dist
 #.dbenv.js
 /settings/db.js
+settings/db.js
 
 
 # local env files
