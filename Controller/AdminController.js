@@ -177,7 +177,7 @@ exports.getDependenciesStudent = async (req, res) => {
         console.log(sqlData)
 
         if(!sqlData.length) {
-            response.status(201, [],res)
+            response.status(201, [],res.set('Access-Control-Allow-Origin', 'https://it-govzalla.onrender.com/'))
         }else {
             response.status(200,
                 sqlData,res)
