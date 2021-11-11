@@ -8,9 +8,9 @@ class DB {
 
             //ВНЕШНЯ БАЗА НА БЕГЕТ
             host: "govzalla.beget.tech",
-            user: "govzalla_it_cnpp",
+            user: "govzalla_it_gov",
             password: "2404141rA!",
-            database: "govzalla_it_cnpp"
+            database: "govzalla_it_gov"
             //
             // host: "localhost",
             // user: "root",
