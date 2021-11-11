@@ -173,6 +173,7 @@ exports.getDependenciesStudent = async (req, res) => {
                     WHERE s_user_id = "${userId}"`
         console.log(sql)
         let [sqlData] = await req.db.execute(sql)
+
         console.log(sqlData)
 
         if(!sqlData.length) {
