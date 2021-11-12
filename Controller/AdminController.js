@@ -196,7 +196,7 @@ exports.getDependenciesTutor = async (req, res) => {
 
         let sql =  `SELECT gr.group_id, gr.tutor_id, g.title
                     FROM groups_relationship as gr 
-                    INNER JOIN groups as g ON gr.group_id = g.id 
+                    INNER JOIN groups_ as g ON gr.group_id = g.id 
                     WHERE gr.tutor_id = "${userId}"`
         let [groupData] = await req.db.execute(sql)
 
