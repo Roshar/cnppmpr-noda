@@ -322,17 +322,21 @@ exports.updateExercise = async(req, res) => {
 
 exports.deleteTask = async(req, res) => {
     const {id, task} = req.body.param
+
     const {subTypeTableIom,report,student} = req.body.tbl
-    const checkAssignedStudentSql = `SELECT COUNT(*) FROM ${student} WHERE iom_id = "${id}"`
+
+    // const checkAssignedStudentSql = `SELECT COUNT(*) FROM ${student} WHERE iom_id = "${id}"`
     const checkHasReportFromStudentSql = `SELECT COUNT(*) FROM ${report} WHERE iom_id = "${id}" AND exercises_id = ${task}`;
     const deleteTaskSql = `DELETE FROM ${subTypeTableIom} WHERE iom_id = "${id}" AND id_exercises = ${task}`
 
-    const [checkAssignedStudent] = await req.db.execute(checkAssignedStudentSql)
+    // const [checkAssignedStudent] = await req.db.execute(checkAssignedStudentSql)
     const [checkHasReportFromStudent] = await req.db.execute(checkHasReportFromStudentSql)
 
+    // console.log(checkAssignedStudent[0]['COUNT(*)'])
+    console.log(checkHasReportFromStudent[0]['COUNT(*)'])
     let deleteResult = {};
 
-    if(!checkAssignedStudent[0]['COUNT(*)'] && !checkHasReportFromStudent[0]['COUNT(*)']) {
+    if(!checkHasReportFromStudent[0]['COUNT(*)']) {
         [deleteResult] = await req.db.execute(deleteTaskSql)
     }
 
@@ -347,17 +351,35 @@ exports.deleteTask = async(req, res) => {
 exports.deleteIom = async(req,res) => {
     try{
         const uid = await userId(req.db,req.body.token)
-        const {id, task} = req.body.param
-        const checkStatusToDeleteSql = `SELECT * FROM permission_to_delete_iom WHERE iom_id = "${id}"`
-        const requestToDeleteSql = "INSERT INTO `permission_to_delete_iom`(`iom_id`,`tutor_id`) VALUES ('" + id + "','" + uid[0]['user_id'] + "')";
-        const [checkStatusToDelete] = await req.db.execute(checkStatusToDeleteSql)
+        const tblCollection = tblMethod.tbleCollection(uid[0]['user_id'])
+        const {id} = req.body.param
+        const check_IOM_empty_SQL = `SELECT COUNT(id) as id FROM relationship_student_iom WHERE iom_id = "${id}"`
+        const [check_IOM_empty] = await req.db.execute(check_IOM_empty_SQL)
+        const delete_IOM_empty_SQL = `DELETE FROM ${tblCollection.iom} WHERE iom_id = "${id}"`
+        const delete_task_from_empty_IOM_SQL = `DELETE FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${id}"`
+        const delete_from_count_iom = `DELETE FROM count_iom WHERE iom_id = "${id}" AND tutor_id = "${uid[0]['user_id']}"`
+        if(check_IOM_empty[0]['id']) {
+            const checkStatusToDeleteSql = `SELECT * FROM permission_to_delete_iom WHERE iom_id = "${id}"`
+            const requestToDeleteSql = "INSERT INTO `permission_to_delete_iom`(`iom_id`,`tutor_id`) VALUES ('" + id + "','" + uid[0]['user_id'] + "')";
+            const [checkStatusToDelete] = await req.db.execute(checkStatusToDeleteSql)
 
-        if(checkStatusToDelete.length) {
-            response.status(201,{message:'Вы уже отправляли запрос на удаление. Дождитесь одобрения администратора'},res)
+            if(checkStatusToDelete.length) {
+                response.status(201,{message:'Вы уже отправляли запрос на удаление. Дождитесь одобрения администратора'},res)
+            }else {
+                const [checkStatusToDelete] = await req.db.execute(requestToDeleteSql)
+                response.status(200,{message:'Ваша заявка принята. После одобрения администратора, данный ИОМ будет удален'},res)
+            }
         }else {
-            const [checkStatusToDelete] = await req.db.execute(requestToDeleteSql)
-            response.status(200,{message:'Ваша заявка принята. После одобрения администратора, данный ИОМ будет удален'},res)
+            const [delete_IOM_empty] = await req.db.execute(delete_IOM_empty_SQL)
+            await req.db.execute(delete_task_from_empty_IOM_SQL)
+            await req.db.execute(delete_from_count_iom)
+            if(delete_IOM_empty.affectedRows) {
+                response.status(201,{message:'Индивидуальный образовательный маршрут был удален',code:true},res)
+            }else {
+                response.status(200,{message:'Не удалось удалить ИОМ. Обратитесь к разработчикам'},res)
+            }
         }
+
 
     }catch(e) {
         console.log(e.message)

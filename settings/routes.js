@@ -127,6 +127,7 @@ module.exports = (app) => {
     app.route('/api/notification/getRequestStudents').post(notificationCtrl.getRequestStudents)
     app.route('/api/notification/getRequestTutors').post(notificationCtrl.getRequestTutors)
     app.route('/api/notification/getIomRequest').post(notificationCtrl.getIomRequest)
+    app.route('/api/notification/cancelRequest').post(notificationCtrl.cancelRequest)
 
     // CONVERSATION
     app.route('/api/conversation/send').post(conCtrl.send)

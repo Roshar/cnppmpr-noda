@@ -22,6 +22,25 @@ exports.getAction = async(req,res) => {
     }
 }
 
+exports.cancelRequest = async(req,res) => {
+    try {
+        const idIom = req.body.idIom
+        const idTutor = req.body.idTutor
+        let countReq = `DELETE FROM permission_to_delete_iom WHERE iom_id="${idIom}" AND tutor_id= "${idTutor}"`
+        let [result] = await req.db.execute(countReq)
+
+        if(!result.affectedRows) {
+            response.status(201, {message: 'Неизвестная ошибка, обратитесь к разработчикам'},res)
+        }else {
+            response.status(200,
+                {message: 'Запрос на удаление ИОМа был успешно отклонен'},res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
 exports.getRequestStudents = async(req,res) => {
     try {
 
@@ -67,7 +86,7 @@ exports.getIomRequest = async(req,res) => {
                            INNER JOIN tutors as t ON p.tutor_id = t.user_id`
         let [result] = await req.db.execute(iomData)
         if(!result.length) {
-            response.status(201, {},res)
+            response.status(201, [],res)
         }else {
             response.status(200,
                 result,res)

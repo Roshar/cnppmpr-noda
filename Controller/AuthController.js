@@ -331,9 +331,7 @@ exports.getRole = async (req, res) => {
         const token = req.body.token
         const sql = `SELECT role, status, login FROM authorization WHERE token_key = "${token}"`
         let sql2;
-
         const [rows] = await req.db.execute(sql)
-        console.log(rows)
         if(rows.length) {
             sql2 = `UPDATE users SET auth_update = NOW() WHERE login = "${rows[0].login}"`
             await req.db.execute(sql2)

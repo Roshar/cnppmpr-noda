@@ -7,21 +7,25 @@ const tbl = require('./../use/roleTbl')
 exports.send = async(req,res) => {
     try {
         const {sendBody, token, targetUserId, link = ''} = req.body
-        const senderId = await userId(token)
+        const senderId = await userId(req.db,token)
         const links = (link !== '') ? link : null
         let conId;
 
+        //Проверяем наличие комнаты в таблице conversation
         const checkIssetConversation = `SELECT id FROM conversation WHERE source_user_id = "${senderId[0]['user_id']}" AND target_user_id = "${targetUserId}" `
         const [check] = await req.db.execute(checkIssetConversation)
         if(!check.length) {
+            // В случае отсутствия создаем комнату и возвращаем ID комнаты
             const sql = `INSERT INTO conversation (source_user_id, target_user_id)
                     VALUES ("${senderId[0]['user_id']}", "${targetUserId}")`
             const [result1] = await req.db.execute(sql)
             conId = result1.insertId
         }else {
+            //Возвращаем ID , если такая комната существует
             conId = check[0]['id']
         }
 
+        //Добавляем сообщение в таблицу CONVERSATION_ROOM с указанимем полученного ID
         if(conId) {
             const sql = `INSERT INTO conversation_room (con_id, source_user, target_user, body, link)
                         VALUES (${conId},"${senderId[0]['user_id']}", "${targetUserId}", "${sendBody}", "${links}")`
@@ -45,6 +49,7 @@ exports.send = async(req,res) => {
 
 exports.getCompanions = async(req,res) => {
     try {
+        console.log(req.body)
         const token = req.body.token
         const senderId = await userId(req.db,token)
 
@@ -82,11 +87,14 @@ exports.getCompanions = async(req,res) => {
              WHERE c.source_user_id = "${senderId[0]['user_id']}" `
 
         let [adminsData] = await req.db.execute(sqAdmins)
-        if(!studentsData.length ) {
-            response.status(201, {},res)
+
+        const resData = [studentsData,tutorsData,adminsData]
+
+        if(!resData.length ) {
+            response.status(201, [],res)
         }else {
             response.status(200,
-                {studentsData,adminsData,tutorsData},res)
+                resData,res)
             return true
         }
     }catch (e) {

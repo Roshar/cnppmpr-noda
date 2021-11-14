@@ -41,7 +41,7 @@ exports.addExercise = async(req, res) => {
         let {title, description, link, category } = req.body.values
 
         const sql = `INSERT INTO ${tblCollection.library} (user_id, title,link, description,tag_id) VALUES ("${id[0]['user_id']}","${title}","${link}","${description}",${category})`
-        let result = await req.db.execute(sql)
+        let [result] = await req.db.execute(sql)
 
         if(!result.insertId) {
             response.status(400, {message:"Ошибка при добавлении элемента"},res)
