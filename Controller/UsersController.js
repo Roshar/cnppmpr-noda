@@ -160,7 +160,6 @@ exports.updateStudentProfile = async (req, res) => {
     }else {
         response.status(400,{message:'Ошибка'},res)
     }
-
 }
 
 exports.changeAvatar = async (req, res) => {

@@ -12,7 +12,28 @@ module.exports = (app) => {
             cb(null, file.originalname + '.'+file.mimetype.split('/')[1])
         }
     })
-    const upload = multer({ storage: storage });
+    const upload = multer({
+        storage: storage,
+        limits: {
+            fields: 5,
+            fieldNameSize: 4, // TODO: Check if this size is enough
+            fieldSize: 2000, //TODO: Check if this size is enough
+            // TODO: Change this line after compression
+            fileSize: 5000000, // 5 МБ
+        },
+        fileFilter: function(req, file, cb){
+            console.log(file)
+            checkFileType(file, cb);
+        }
+    })
+    function checkFileType(file, cb){
+        console.log(file)
+        if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png'){
+            return cb(null,true);
+        }else {
+            return cb('Error: Images Only!');
+        }
+    }
     const authCtrl = require('../Controller/AuthController')
     const disciplinesCtrl = require('./../Controller/DisciplinesController')
     const schoolCtrl = require('./../Controller/SchoolsController')
@@ -69,6 +90,7 @@ module.exports = (app) => {
     app.route('/api/user/updateStudentProfile').post(usersCtrl.updateStudentProfile)
 
     app.route('/api/user/changeAvatar').post(upload.single('file'), usersCtrl.changeAvatar)
+    // app.route('/api/user/changeAvatar').post( usersCtrl.changeAvatar)
 
     app.route('/api/iom/getData').post(iomCtrl.getData)
     app.route('/api/iom/getStatusFinished').post(iomCtrl.getStatusFinished)

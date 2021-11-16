@@ -460,9 +460,11 @@ exports.checkIssetMyIom = async(req, res) => {
                         WHERE rsi.user_id = "${studentId}"
                         AND rsi.tutor_id = "${tutorId}"`
 
+        console.log(iomSql)
         let [result] = await req.db.execute(iomSql)
+        console.log(result)
         if(!result.length) {
-            response.status(200, [],res)
+            response.status(201, [],res)
         }else {
             response.status(200,
                 result,res)
