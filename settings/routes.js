@@ -18,7 +18,7 @@ module.exports = (app) => {
             fields: 5,
             fieldNameSize: 4, // TODO: Check if this size is enough
             fieldSize: 2000, //TODO: Check if this size is enough
-            // TODO: Change this line after compression
+                                 // TODO: Change this line after compression
             fileSize: 5000000, // 5 МБ
         },
         fileFilter: function(req, file, cb){
@@ -27,7 +27,6 @@ module.exports = (app) => {
         }
     })
     function checkFileType(file, cb){
-        console.log(file)
         if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png'){
             return cb(null,true);
         }else {
@@ -79,14 +78,15 @@ module.exports = (app) => {
     app.route('/api/auth/recovery').post(authCtrl.recovery)
 
     app.route('/api/auth/recoverychecklink').post(authCtrl.recoverychecklink)
-
     app.route('/api/auth/changepassword').post(authCtrl.changepassword)
-
     app.route('/api/user/getUserData').post(usersCtrl.getUserData)
-
     app.route('/api/user/getAdminData').post(usersCtrl.getAdminData)
+    app.route('/api/user/getTutorData').post(usersCtrl.getTutorData)
+    app.route('/api/user/deleteTutor').post(usersCtrl.deleteTutor)
+    app.route('/api/user/getDataAdminAccount').post(usersCtrl.getDataAdminAccount)
     app.route('/api/user/getFromTutorTbls').post(usersCtrl.getFromTutorTbls)
     app.route('/api/user/updateTutorProfile').post(usersCtrl.updateTutorProfile)
+    app.route('/api/user/updateAdminProfile').post(usersCtrl.updateAdminProfile)
     app.route('/api/user/updateStudentProfile').post(usersCtrl.updateStudentProfile)
 
     app.route('/api/user/changeAvatar').post(upload.single('file'), usersCtrl.changeAvatar)

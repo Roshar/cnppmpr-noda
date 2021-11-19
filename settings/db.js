@@ -11,20 +11,18 @@ class DB {
             // user: "govzalla_it_gov",
             // password: "2404141rA!",
             // database: "govzalla_it_gov"
-            //
+
             host: "localhost",
             user: "root",
             password: "1234567890",
             database: "srm"
 
-
-                // //
-                // host:env.HOST,
-                // socketPath: env.SOCKET,
-                // port: env.PORT,
-                // user: env.DB_USER,
-                // password: env.DB_PASSWORD,
-                // database: env.DB_NAME
+            // host:env.HOST,
+            // socketPath: env.SOCKET,
+            // port: env.PORT,
+            // user: env.DB_USER,
+            // password: env.DB_PASSWORD,
+            // database: env.DB_NAME
 
         });
     }

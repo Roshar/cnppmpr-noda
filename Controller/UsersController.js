@@ -6,9 +6,24 @@ const userId = require('./../use/getUserId')
 const roleTbl = require('./../use/roleTbl')
 
 
+// exports.getAdminData = async(req, res) => {
+//
+//     const sql = `SELECT * FROM authorization WHERE token_key = "${req.body.user}" `
+//     const [userData] = await req.db.execute(sql)
+//
+//     if(userData.length <= 0) {
+//         response.status(401, {message:"пусто"}, res)
+//     }else {
+//         response.status(200, userData, res)
+//         return true
+//     }
+// }
+
 exports.getAdminData = async(req, res) => {
 
-    const sql = `SELECT * FROM authorization WHERE token_key = "${req.body.user}" `
+    const admin = await userId(req.db,req.body.user)
+    const adminId = admin[0]['user_id']
+    const sql = `SELECT a.user_id,a.name, a.surname, a.avatar FROM admins as a WHERE user_id = "${adminId}"`
     const [userData] = await req.db.execute(sql)
 
     if(userData.length <= 0) {
@@ -18,6 +33,123 @@ exports.getAdminData = async(req, res) => {
         return true
     }
 }
+exports.getTutorData = async(req, res) => {
+    const tutor = await userId(req.db,req.body.user)
+    const tutorId = tutor[0]['user_id']
+    const sql = `SELECT a.user_id,a.name, a.surname, a.avatar FROM tutors as a WHERE user_id = "${tutorId}"`
+    const [userData] = await req.db.execute(sql)
+
+    if(userData.length <= 0) {
+        response.status(401, {message:"пусто"}, res)
+    }else {
+        response.status(200, userData, res)
+        return true
+    }
+}
+
+
+exports.deleteTutor = async(req, res) => {
+    const code = req.body.code
+    const tutorId = req.body.tutorId
+    const admin = await userId(req.db,req.body.token)
+    const role = admin[0]['role']
+    const tblCollection = tblMethod.tbleCollection(tutorId)
+
+    if(role === 'admin' && code === '5808'){
+        const tutors = `DELETE FROM tutors WHERE user_id = "${tutorId}"`
+        const users = `DELETE FROM users WHERE id_user = "${tutorId}"`
+        const rts = `DELETE FROM relationship_tutor_student  WHERE t_user_id = "${tutorId}"`
+        const rsi = `DELETE FROM relationship_student_iom  WHERE tutor_id = "${tutorId}"`
+        const permissionToDelete = `DELETE FROM permission_to_delete_iom  WHERE tutor_id = "${tutorId}"`
+        const globalWorkplaceTutors = `DELETE FROM global_workplace_tutors  WHERE user_id = "${tutorId}"`
+        const report = `DELETE FROM report WHERE tutor_id = "${tutorId}"`
+        const countIom = `DELETE FROM count_iom WHERE tutor_id = "${tutorId}"`
+        const [delTut] = await req.db.execute(tutors)
+        const [delUser] = await req.db.execute(users)
+        const [gwt] = await req.db.execute(globalWorkplaceTutors)
+                      await req.db.execute(rts)
+                      await req.db.execute(rsi)
+                      await req.db.execute(permissionToDelete)
+                      await req.db.execute(report)
+                      await req.db.execute(countIom)
+                      await req.db.execute(countIom)
+        const groupIdDelSQl = `SELECT id FROM groups_relationship  WHERE tutor_id = "${tutorId}"`
+        const [groupIdDel] = await req.db.execute(groupIdDelSQl)
+        if(groupIdDel.length) {
+            const id = groupIdDel[0]['id']
+            const deleteGroupRel = `DELETE FROM groups_relationship  WHERE tutor_id = ${id}`
+            const deleteGroup = `DELETE FROM groups_  WHERE id = ${id}`
+                                await req.db.execute(deleteGroupRel)
+                                await req.db.execute(deleteGroup)
+        }
+
+        const deleteTblIom = `DROP TABLE ${tblCollection.iom}`
+        const deleteTblLibrary = `DROP TABLE ${tblCollection.library}`
+        const deleteTblMentor = `DROP TABLE ${tblCollection.mentor}`
+        const deleteTblReport = `DROP TABLE ${tblCollection.report}`
+        const deleteTblStudent = `DROP TABLE ${tblCollection.student}`
+        const deleteTblSubTypeTableIom = `DROP TABLE ${tblCollection.subTypeTableIom}`
+                                await req.db.execute(deleteTblIom)
+                                await req.db.execute(deleteTblLibrary)
+                                await req.db.execute(deleteTblMentor)
+                                await req.db.execute(deleteTblReport)
+                                await req.db.execute(deleteTblStudent)
+                                await req.db.execute(deleteTblSubTypeTableIom)
+
+        if(!delTut.affectedRows || !delUser.affectedRows || !gwt.affectedRows) {
+            response.status(201, {message:"ПРОИЗОШЕЛ СБОЙ ПРИ ВЫПОЛНЕНИИ ОПЕРАЦИИ.СРОЧНО ОБРАТИТЕСЬ К РАЗРАБОТЧИКАМ"}, res)
+        }else {
+            response.status(200, {message: 'Тьютор и все связанные с ним данные были удалены!'}, res)
+            return true
+        }
+
+        // console.log(deleteTblIom)
+        // console.log(deleteTblLibrary)
+        // console.log(deleteTblMentor)
+        // console.log(deleteTblReport)
+        // console.log(deleteTblStudent)
+        // console.log(deleteTblSubTypeTableIom)
+        // console.log(tutors)
+        // console.log(users)
+        // console.log(rts)
+        // console.log(rsi)
+        // console.log(permissionToDelete)
+        // console.log(globalWorkplaceTutors)
+        // console.log(report)
+        // console.log(countIom)
+        // console.log(deleteGroupRel)
+        // console.log(deleteGroup)
+
+    }else {
+        response.status(201, {message: 'Нет доступа для выполнения данной операции'}, res)
+    }
+}
+
+exports.getDataAdminAccount = async(req, res) => {
+    try {
+        const admin = await userId(req.db,req.body.token)
+        const adminId = admin[0]['user_id']
+        const sql = `SELECT a.user_id,a.name, a.surname, a.patronymic, a.phone, a.gender, a.avatar, 
+                        DATE_FORMAT(a.birthday, '%d.%m.%Y') as birthday, TIMESTAMPDIFF(YEAR, a.birthday, CURDATE()) as age,
+                        DATE_FORMAT(a.birthday, '%Y-%m-%d') as birthdayConvert,
+                         u.login FROM admins as a 
+                         INNER JOIN users as u ON a.user_id = u.id_user 
+                         WHERE a.user_id = "${adminId}"`
+
+
+        const [result] = await req.db.execute(sql)
+
+        if(result.length <= 0) {
+            response.status(401, {message:"пусто"}, res)
+        }else {
+            response.status(200, result[0], res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
 
 exports.getUserData = async(req, res) => {
     try {
@@ -76,7 +208,6 @@ exports.getUserData = async(req, res) => {
 }
 
 
-
 exports.getAllUsers = async (req, res) => {
 
     const sql = 'SELECT * FROM `users`'
@@ -122,7 +253,6 @@ exports.getFromTutorTbls = async (req, res) => {
 exports.updateTutorProfile = async (req, res) => {
     const {name, surname, patronymic, login, birthday, phone, gender, token} = req.body
 
-    const userObj = new DB()
     const sql = `SELECT * FROM authorization WHERE token_key = "${token}" `
     const [userData] = await req.db.execute(sql)
     if (userData.length) {
@@ -133,6 +263,28 @@ exports.updateTutorProfile = async (req, res) => {
                       patronymic = "${patronymic}", phone = "${phone}",
                        birthday = "${birthday}", gender="${gender}" WHERE user_id = "${user}"`
         const [result] =  await req.db.execute(sql3)
+        if(result.affectedRows) {
+            response.status(200,{message:'Ваш профиль обновлен'},res)
+        }
+    }else {
+        response.status(400,{message:'Ошибка'},res)
+    }
+}
+
+exports.updateAdminProfile = async (req, res) => {
+
+    // console.log(req.body)
+    const {name, surname, patronymic, login, birthday, phone, gender, token} = req.body
+    const admin = await userId(req.db, token)
+    const adminId = admin[0]['user_id']
+    if (adminId.length) {
+        const sql2 = `UPDATE users SET login = "${login}" WHERE id_user = "${adminId}"`
+        await req.db.execute(sql2)
+        const sql3 = `UPDATE admins SET name="${name}", surname="${surname}",
+                      patronymic = "${patronymic}", phone = "${phone}",
+                       birthday = "${birthday}", gender="${gender}" WHERE user_id = "${adminId}"`
+        const [result] =  await req.db.execute(sql3)
+        console.log(result)
         if(result.affectedRows) {
             response.status(200,{message:'Ваш профиль обновлен'},res)
         }
