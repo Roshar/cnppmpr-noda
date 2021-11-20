@@ -3,6 +3,105 @@ const response = require('./../response')
 const DB = require('./../settings/db')
 const tblMethod = require('./../use/tutorTblCollection')
 
+
+
+
+exports.getAllIomDataByTutorId = async(req,res) => {
+    try {
+        const tutorId = req.body.tutorId
+        const tblCollection = tblMethod.tbleCollection(tutorId)
+        let tutorDataSql = `SELECT t.user_id, t.surname, t.name, t.patronymic, d.title_discipline FROM tutors as t 
+                            INNER JOIN discipline as d ON t.discipline_id = d.id_dis WHERE user_id = "${tutorId}"`
+        const [tutorData] = await req.db.execute(tutorDataSql)
+        let iomSql = `SELECT DATE_FORMAT(created_at, '%d-%m-%Y') as created_at, iom_id,title,description FROM ${tblCollection.iom}`
+        let exerciseCountSql = [];
+        const [iomData] = await req.db.execute(iomSql)
+        let countExercises = [];
+        if(iomData.length) {
+            for(let i = 0; i < iomData.length; i++){
+                exerciseCountSql.push(`SELECT COUNT(*)  FROM ${tblCollection.subTypeTableIom} WHERE iom_id = "${iomData[i]['iom_id']}"`)
+                countExercises.push((await req.db.execute(exerciseCountSql[i]))[0])
+                iomData[i].countExercises = countExercises[i][0]['COUNT(*)']
+            }
+        }
+        if(!iomData.length) {
+            response.status(200, [],res)
+        }else {
+            response.status(200,
+                [iomData,tutorData],res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+exports.getDataFromIOM = async(req,res) => {
+    try {
+        const iomId = req.body.iomId
+        const tutorId = req.body.tutorId
+        const tblCollection = tblMethod.tbleCollection(tutorId)
+        let iomSql = `SELECT DATE_FORMAT(created_at, '%d-%m-%Y') as created_at, iom_id,title,description 
+                             FROM ${tblCollection.iom} WHERE iom_id = "${iomId}" `
+
+        const exSql = `SELECT e.id_exercises, e.iom_id, e.title, e.description, e.link, e.mentor,DATE_FORMAT(e.term, '%d-%m-%Y') as term , 
+                    t.title_tag, e.tag_id FROM ${tblCollection.subTypeTableIom} as e 
+                    INNER JOIN tag as t ON e.tag_id = t.id_tag WHERE e.iom_id = "${iomId}"`
+
+        const countStudentsSql = `SELECT COUNT(id) as id FROM relationship_student_iom WHERE tutor_id = "${tutorId}" AND iom_id = "${iomId}"`
+
+        let tutorDataSql = `SELECT t.user_id, t.surname, t.name, t.patronymic, d.title_discipline FROM tutors as t 
+                            INNER JOIN discipline as d ON t.discipline_id = d.id_dis WHERE user_id = "${tutorId}"`
+        const [tutorData] = await req.db.execute(tutorDataSql)
+
+        const [iomData] = await req.db.execute(iomSql)
+        const [exData] = await req.db.execute(exSql)
+        const [countStudents] = await req.db.execute(countStudentsSql)
+
+        if(!iomData.length) {
+            response.status(200, [],res)
+        }else {
+            response.status(200,
+                [iomData,tutorData,exData,countStudents],res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+exports.getTask = async(req,res) => {
+    try {
+        const iomId = req.body.iomId
+        const tutorId = req.body.tutorId
+        const taskId = req.body.taskId
+        const tblCollection = tblMethod.tbleCollection(tutorId)
+        const tbl = tblCollection.subTypeTableIom
+        let taskSql = `SELECT    
+                            t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id FROM ${tbl} as t INNER JOIN tag ON t.tag_id = tag.id_tag WHERE t.iom_id = "${iomId}" AND t.id_exercises = "${taskId}"`
+        const [taskData] = await req.db.execute(taskSql)
+
+        if(!taskData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                taskData[0],res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
 exports.getUserCount = async(req,res) => {
     try {
         const tblName = req.body.tbl
@@ -989,7 +1088,39 @@ exports.getStatusFinished = async(req, res) => {
         FROM ${tblCollection.report} as report  
         INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
         INNER JOIN tag ON t.tag_id = tag.id_tag
-        WHERE report.iom_id = "${iomId}" AND report.student_id = "${studentId}"`
+        WHERE report.iom_id = "${iomId}" AND report.student_id = "${studentId}" AND accepted = 1`
+        const [exerciseData] = await req.db.execute(exerciseSql)
+        if(!exerciseData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                exerciseData,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+exports.getStatusToPendingFinish = async(req, res) => {
+    try {
+        const {tutorId, studentId, iomId} = req.body
+        const tblCollection = tblMethod.tbleCollection(tutorId)
+        let exerciseSql = `SELECT 
+                            t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,  
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id
+        FROM ${tblCollection.report} as report  
+        INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
+        INNER JOIN tag ON t.tag_id = tag.id_tag
+        WHERE report.iom_id = "${iomId}" AND report.student_id = "${studentId}" AND accepted = 0`
         const [exerciseData] = await req.db.execute(exerciseSql)
         if(!exerciseData.length) {
             response.status(201, {},res)

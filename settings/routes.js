@@ -83,6 +83,7 @@ module.exports = (app) => {
     app.route('/api/user/getAdminData').post(usersCtrl.getAdminData)
     app.route('/api/user/getTutorData').post(usersCtrl.getTutorData)
     app.route('/api/user/deleteTutor').post(usersCtrl.deleteTutor)
+    app.route('/api/user/deleteStudent').post(usersCtrl.deleteStudent)
     app.route('/api/user/getDataAdminAccount').post(usersCtrl.getDataAdminAccount)
     app.route('/api/user/getFromTutorTbls').post(usersCtrl.getFromTutorTbls)
     app.route('/api/user/updateTutorProfile').post(usersCtrl.updateTutorProfile)
@@ -93,7 +94,9 @@ module.exports = (app) => {
     // app.route('/api/user/changeAvatar').post( usersCtrl.changeAvatar)
 
     app.route('/api/iom/getData').post(iomCtrl.getData)
+    app.route('/api/iom/getPendingData').post(iomCtrl.getPendingData)
     app.route('/api/iom/getStatusFinished').post(iomCtrl.getStatusFinished)
+    app.route('/api/iom/getStatusToPendingFinish').post(iomCtrl.getStatusToPendingFinish)
 
     app.route('/api/iom/addNewIom').post(iomCtrl.addNewIom)
     app.route('/api/iom/issetIomId').post(iomCtrl.issetIomId)
@@ -146,6 +149,7 @@ module.exports = (app) => {
     //NOTIFICATION
 
     app.route('/api/notification/getAction').post(notificationCtrl.getAction)
+    app.route('/api/notification/getRequestPendingExercise').post(notificationCtrl.getRequestPendingExercise)
     app.route('/api/notification/getRequestStudents').post(notificationCtrl.getRequestStudents)
     app.route('/api/notification/getRequestTutors').post(notificationCtrl.getRequestTutors)
     app.route('/api/notification/getIomRequest').post(notificationCtrl.getIomRequest)
@@ -164,7 +168,11 @@ module.exports = (app) => {
     // getData
     app.route('/api/admin/getUserCount').post(adminCtrl.getUserCount)
     app.route('/api/admin/getExercisesByIomId').post(adminCtrl.getExercisesByIomId)
+    app.route('/api/admin/getAllIomDataByTutorId').post(adminCtrl.getAllIomDataByTutorId)
+    app.route('/api/admin/getDataFromIOM').post(adminCtrl.getDataFromIOM)
+    app.route('/api/admin/getTask').post(adminCtrl.getTask)
     app.route('/api/admin/getStatusFinished').post(adminCtrl.getStatusFinished)
+    app.route('/api/admin/getStatusToPendingFinish').post(adminCtrl.getStatusToPendingFinish)
     app.route('/api/admin/getLastUsers').post(adminCtrl.getLastUsers)
     app.route('/api/admin/getUsersActive').post(adminCtrl.getUsersActive)
     app.route('/api/admin/getUsersWithDisAreaGenderFilter').post(adminCtrl.getUsersWithDisAreaGenderFilter)

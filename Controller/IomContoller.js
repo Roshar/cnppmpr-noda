@@ -246,11 +246,83 @@ exports.getStatusFinished = async(req, res) => {
         FROM ${tblCollection.report} as report  
         INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
         INNER JOIN tag ON t.tag_id = tag.id_tag
-        WHERE report.iom_id = "${iomId}" AND report.student_id = "${studentId}"`
+        WHERE report.iom_id = "${iomId}" AND report.student_id = "${studentId}" AND report.accepted = 1`
         const [exerciseData] = await req.db.execute(exerciseSql)
 
         if(!exerciseData.length) {
             response.status(201, {},res)
+        }else {
+            response.status(200,
+                exerciseData,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+
+exports.getStatusToPendingFinish = async(req, res) => {
+    try {
+
+        const {token, studentId, iomId} = req.body
+        const id = await userId(req.db,token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        let exerciseSql = `SELECT 
+                            t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id
+        FROM ${tblCollection.report} as report  
+        INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
+        INNER JOIN tag ON t.tag_id = tag.id_tag
+        WHERE report.iom_id = "${iomId}" AND report.student_id = "${studentId}" AND report.accepted = 0`
+        const [exerciseData] = await req.db.execute(exerciseSql)
+
+        if(!exerciseData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                exerciseData,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+
+exports.getPendingData = async(req, res) => {
+    try {
+
+        const {token} = req.body
+        const id = await userId(req.db,token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        let exerciseSql = `SELECT 
+                            t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id
+        FROM ${tblCollection.report} as report  
+        INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
+        INNER JOIN tag ON t.tag_id = tag.id_tag
+        WHERE report.accepted = 0`
+        const [exerciseData] = await req.db.execute(exerciseSql)
+
+        if(!exerciseData.length) {
+            response.status(201, [],res)
         }else {
             response.status(200,
                 exerciseData,res)

@@ -125,6 +125,58 @@ exports.deleteTutor = async(req, res) => {
     }
 }
 
+exports.deleteStudent = async(req, res) => {
+    const code = req.body.code
+    const idStudent = req.body.idStudent
+    const admin = await userId(req.db,req.body.token)
+    const role = admin[0]['role']
+    const issetTutorForStudentSql = `SELECT t_user_id, isset_iom FROM relationship_tutor_student WHERE s_user_id = "${idStudent}"`
+    const [issetTutorForStudent] = await req.db.execute(issetTutorForStudentSql)
+
+    if(role === 'admin' && code === '5808') {
+        if(issetTutorForStudent.length) {
+            const tutorId = issetTutorForStudent[0]['t_user_id']
+            const issetIom = issetTutorForStudent[0]['isset_iom']
+            const tblCollection = tblMethod.tbleCollection(tutorId)
+            const deleteDependencies1 = `DELETE FROM relationship_tutor_student WHERE s_user_id = "${idStudent}" AND t_user_id = "${tutorId}"`
+            const deleteReport = `DELETE FROM report WHERE student_id = "${idStudent}" AND tutor_id = "${tutorId}"`
+
+            const deleteInAdminTbl= `DELETE FROM admin_student_iom_status WHERE student_id = "${idStudent}"`
+                                     await req.db.execute(deleteDependencies1)
+                                     await req.db.execute(deleteReport)
+
+                                     await req.db.execute(deleteInAdminTbl)
+
+            if(issetIom === 1) {
+                const deleteDependencies2 = `DELETE FROM relationship_student_iom WHERE user_id = "${idStudent}" AND tutor_id = "${tutorId}"`
+                const deleteInTutorTblStudent = `DELETE FROM ${tblCollection.student} WHERE student_id = "${idStudent}"`
+                const deleteInTutorTblReport = `DELETE FROM ${tblCollection.report} WHERE student_id = "${idStudent}"`
+                                    await req.db.execute(deleteDependencies2)
+                                    await req.db.execute(deleteInTutorTblStudent)
+                                    await req.db.execute(deleteInTutorTblReport)
+            }
+        }
+
+        const students = `DELETE FROM students WHERE user_id = "${idStudent}"`
+        const users = `DELETE FROM users WHERE id_user = "${idStudent}"`
+        const authorizationTbl= `DELETE FROM authorization WHERE user_id = "${idStudent}"`
+                                await req.db.execute(authorizationTbl)
+        const [deleteUser] = await req.db.execute(users)
+        const [deleteStudent] = await req.db.execute(students)
+        if(deleteUser.affectedRows && deleteStudent.affectedRows) {
+            response.status(200, {message: 'Слушатель и все связанные с ним данные были удалены!'}, res)
+            return true
+        }else {
+            response.status(201, {message:"ПРОИЗОШЕЛ СБОЙ ПРИ ВЫПОЛНЕНИИ ОПЕРАЦИИ.СРОЧНО ОБРАТИТЕСЬ К РАЗРАБОТЧИКАМ"}, res)
+            return true
+        }
+
+    }else {
+        response.status(201, {message: 'Нет доступа для выполнения данной операции'}, res)
+    }
+
+}
+
 exports.getDataAdminAccount = async(req, res) => {
     try {
         const admin = await userId(req.db,req.body.token)
