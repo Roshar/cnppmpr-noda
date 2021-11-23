@@ -128,6 +128,7 @@ exports.deleteStudentFromIomEducation = async(req, res) => {
     }
 }
 
+
 exports.getUsersFromIomFreeForEducation = async(req, res) => {
 
     try {
@@ -460,9 +461,42 @@ exports.checkIssetMyIom = async(req, res) => {
                         WHERE rsi.user_id = "${studentId}"
                         AND rsi.tutor_id = "${tutorId}"`
 
-        console.log(iomSql)
+
         let [result] = await req.db.execute(iomSql)
+
+        if(!result.length) {
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                result,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+exports.getStatisticByIOM = async(req, res) => {
+    try {
+
+        const {iomId, userId, tutorId} = req.body
+        const tblCollection = tblMethod.tbleCollection(tutorId)
+        let finishedTaskSQL = `SELECT COUNT(id) as id FROM ${tblCollection.report} WHERE iom_id = "${iomId}" 
+                       AND student_id = "${userId}" AND accepted = 1`
+        let onEditTaskSQL = `SELECT COUNT(id) as id FROM ${tblCollection.report} WHERE iom_id = "${iomId}" 
+                       AND student_id = "${userId}" AND accepted = 2`
+        let pendingTaskSQL = ` SELECT COUNT(id) as id FROM ${tblCollection.report} WHERE iom_id = "${iomId}"
+                       AND student_id = "${userId}" AND on_check = 1`
+
+
+        let [finishedTask] = await req.db.execute(finishedTaskSQL)
+        let [onEditTask] = await req.db.execute(onEditTaskSQL)
+        let [pendingTask] = await req.db.execute(pendingTaskSQL)
+
+        const result = [finishedTask,onEditTask,pendingTask]
+
         console.log(result)
+
         if(!result.length) {
             response.status(201, [],res)
         }else {
@@ -479,15 +513,20 @@ exports.checkIssetMyIom = async(req, res) => {
 //получаем все задания из назначенного иома | профиль студент
 exports.getExercisesFromMyIom = async(req, res) => {
     try {
-
-        const {iomId, tutorId} = req.body
+        const {iomId, tutorId,token} = req.body
+        const student = await userId(req.db,token)
+        const studentId = student[0]['user_id'];
         const tblCollection = tblMethod.tbleCollection(tutorId)
-        let iomSql = ` SELECT sub.id_exercises, sub.iom_id,sub.mentor, sub.title, sub.description, 
+
+        let iomSql = `SELECT sub.id_exercises, sub.iom_id,sub.mentor, sub.title, sub.description, 
                               DATE_FORMAT(sub.term, '%d.%m.%Y') as term, 
-                              sub.tag_id, sub.link, t.id_tag,t.title_tag
-                        FROM ${tblCollection.subTypeTableIom} as sub 
+                              sub.tag_id, sub.link, t.id_tag,t.title_tag,report.accepted, report.on_check
+                        FROM ${tblCollection.subTypeTableIom} as sub
                         INNER JOIN tag as t ON sub.tag_id = t.id_tag 
+                        LEFT OUTER JOIN ${tblCollection.report} as report ON sub.id_exercises = report.exercises_id 
+                        AND report.student_id = "${studentId}"
                         WHERE sub.iom_id = "${iomId}"`
+
         let [result] = await req.db.execute(iomSql)
 
         let distinct = `SELECT DISTINCT sub.tag_id,t.title_tag  FROM ${tblCollection.subTypeTableIom} as sub
@@ -515,8 +554,8 @@ exports.getMyTaskById = async(req, res) => {
         const iomId = req.body.iomId
         const taskId = req.body.taskId
         const token = req.body.token
-        const id = await userId(req.db,token)
-        const studentId = id[0]['user_id']
+        const student = await userId(req.db,token)
+        const studentId = student[0]['user_id'];
         const accessSQl = `SELECT tutor_id FROM relationship_student_iom WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`
         let [access] = await req.db.execute(accessSQl)
 
@@ -532,9 +571,19 @@ exports.getMyTaskById = async(req, res) => {
                             t.mentor,
                             tag.id_tag,
                             tag.title_tag,
+                            report.accepted,
+                            report.tutor_comment,
+                            report.content,
+                            report.link as report_link,
+                            report.id as report_id,
                             DATE_FORMAT(t.term, '%d.%m.%Y') as term,
-                            t.tag_id FROM ${tbl} as t INNER JOIN tag ON t.tag_id = tag.id_tag WHERE t.iom_id = "${iomId}" AND t.id_exercises = "${taskId}"`
+                            t.tag_id FROM ${tbl} as t 
+                            INNER JOIN tag ON t.tag_id = tag.id_tag
+                            LEFT OUTER JOIN ${tblCollection.report} as report ON t.id_exercises = report.exercises_id
+                            AND report.student_id = "${studentId}"
+                            WHERE t.iom_id = "${iomId}" AND t.id_exercises = "${taskId}"`
             let [taskData] = await req.db.execute(taskSql)
+            taskData[0].studentId = studentId
             if(!taskData.length) {
                 response.status(201, {},res)
             }else {
@@ -551,13 +600,85 @@ exports.getMyTaskById = async(req, res) => {
     }
 }
 
+exports.getCommentsByTask = async(req, res) => {
+
+    try {
+
+        const iomId = req.body.iomId
+        const taskId = req.body.taskId
+        const token = req.body.token
+        const student = await userId(req.db,token)
+        const studentId = student[0]['user_id'];
+        const accessSQl = `SELECT tutor_id FROM relationship_student_iom WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`
+        let [access] = await req.db.execute(accessSQl)
+
+        if(access.length) {
+           const tutorId = access[0]['tutor_id']
+
+            let commentsSql = `SELECT com_tbl.sender_id, com_tbl.recipient_id, com_tbl.message, com_tbl.like,
+                                      DATE_FORMAT(com_tbl.created_at, '%d-%m-%Y %H:%i:%s') as created_date,
+                                      s.name, s.surname, s.avatar, t.avatar as tutor_avatar 
+                                FROM question_for_task  as com_tbl
+                                LEFT OUTER JOIN students as s ON com_tbl.sender_id = s.user_id OR com_tbl.recipient_id = s.user_id 
+                                LEFT OUTER JOIN tutors as t ON com_tbl.sender_id = t.user_id OR com_tbl.recipient_id = t.user_id 
+                                WHERE com_tbl.iom_id = "${iomId}" AND com_tbl.task_id = "${taskId}"`
+
+            let [comments] = await req.db.execute(commentsSql)
+            if(!comments.length) {
+                response.status(201, [],res)
+            }else {
+                comments[0].studentId = studentId
+                response.status(200,
+                    comments,res)
+                return true
+            }
+        }else {
+            response.status(404, {},res)
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+exports.sendCommentsForTask = async(req, res) => {
+
+    try {
+        const iomId = req.body.iomId
+        const taskId = req.body.taskId
+        const token = req.body.token
+        const tutorId = req.body.tutorId
+        const content = req.body.content
+        const student = await userId(req.db,token)
+        const studentId = student[0]['user_id'];
+
+        const commentSql = `INSERT INTO question_for_task (task_id, iom_id, sender_id, recipient_id, message) VALUES (${taskId},"${iomId}","${studentId}","${tutorId}","${content}")`
+        let [comment] = await req.db.execute(commentSql)
+        if(!comment.insertId) {
+            response.status(400, {message: 'Возникла временная ошибка, обратитесь к тьютору'},res)
+        }else {
+            response.status(200,
+                {message: 'Комментарий добавлен'},res)
+            return true
+        }
+
+
+
+
+    }catch (e) {
+        return e
+    }
+}
+
+
 exports.insertInReportWithoutFile = async(req, res) => {
     try {
         const iomId = req.body.iomId
         const taskId = req.body.taskId
         const token = req.body.token
         const link = req.body.link.trim()
-        const content = req.body.content.trim().replace(/<[^>]*>?/gm, '');
+        // const content = req.body.content.trim().replace(/<[^>]*>?/gm, '');
+        const content = req.body.content.trim();
         const category = req.body.category
 
         const id = await userId(req.db,token)
@@ -571,7 +692,7 @@ exports.insertInReportWithoutFile = async(req, res) => {
             const checkIssetReport = `SELECT id FROM ${tbl} WHERE exercises_id =${taskId} AND iom_id = "${iomId}" AND student_id = "${studentId}"`
             let [checkData] = await req.db.execute(checkIssetReport)
             if(!checkData.length) {
-                const taskSql = `INSERT INTO ${tbl} (iom_id, student_id, exercises_id, tag_id, content, link) VALUES ("${iomId}","${studentId}",${taskId},${category}, "${content}","${link}")`
+                const taskSql = `INSERT INTO ${tbl} (iom_id, student_id, exercises_id, tag_id, content, link, on_check) VALUES ("${iomId}","${studentId}",${taskId},${category}, "${content}","${link}",1)`
                 let [taskData] = await req.db.execute(taskSql)
                 if(!taskData.insertId) {
                     response.status(400, {message: 'Возникла временная ошибка, обратитесь к тьютору'},res)
@@ -584,6 +705,131 @@ exports.insertInReportWithoutFile = async(req, res) => {
                 response.status(201, {message: 'Вы уже отправили отчет по этому заданию'},res)
             }
 
+
+        }else {
+            response.status(404, {},res)
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+exports.insertInReportWithFile = async(req, res) => {
+    try {
+        const fileName = req.file.filename
+        const iomId = req.body.iomId
+        const taskId = req.body.taskId
+        const token = req.body.token
+        const link = req.body.link.trim()
+        const content = req.body.content.trim();
+        const category = req.body.category
+
+        const id = await userId(req.db,token)
+        const studentId = id[0]['user_id']
+        const accessSQl = `SELECT tutor_id FROM relationship_student_iom WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`
+        let [access] = await req.db.execute(accessSQl)
+
+        if(access.length) {
+            const tblCollection = tblMethod.tbleCollection(access[0]['tutor_id'])
+            const tbl = tblCollection.report
+            const checkIssetReport = `SELECT id FROM ${tbl} WHERE exercises_id =${taskId} AND iom_id = "${iomId}" AND student_id = "${studentId}"`
+            let [checkData] = await req.db.execute(checkIssetReport)
+            if(!checkData.length) {
+                const taskSql = `INSERT INTO ${tbl} 
+                                (iom_id, student_id, exercises_id, tag_id, content, link, file_path, on_check ) 
+                                VALUES 
+                                ("${iomId}","${studentId}",${taskId},${category}, "${content}","${link}","${fileName}",1)`
+                let [taskData] = await req.db.execute(taskSql)
+                if(!taskData.insertId) {
+                    response.status(400, {message: 'Возникла временная ошибка, обратитесь к тьютору'},res)
+                }else {
+                    response.status(200,
+                        {message: 'Ваш ответ принят'},res)
+                    return true
+                }
+            }else {
+                response.status(201, {message: 'Вы уже отправили отчет по этому заданию'},res)
+            }
+
+
+        }else {
+            response.status(404, {},res)
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+exports.updateInReportWithoutFile = async(req, res) => {
+    try {
+        const iomId = req.body.iomId
+        const taskId = req.body.taskId
+        const reportId = req.body.reportId
+        const token = req.body.token
+        const link = req.body.link.trim()
+        // const content = req.body.content.trim().replace(/<[^>]*>?/gm, '');
+        const content = req.body.content.trim();
+
+        const id = await userId(req.db,token)
+        const studentId = id[0]['user_id']
+        const accessSQl = `SELECT tutor_id FROM relationship_student_iom WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`
+        let [access] = await req.db.execute(accessSQl)
+
+        if(access.length) {
+            const tblCollection = tblMethod.tbleCollection(access[0]['tutor_id'])
+            const tbl = tblCollection.report
+            const taskSql = `UPDATE ${tbl} SET content ="${content}", link = "${link}",accepted = 0,
+                             on_check = 1, created_at = CURRENT_TIMESTAMP 
+                             WHERE id = ${reportId} AND exercises_id = ${taskId}`
+            let [taskData] = await req.db.execute(taskSql)
+            if(!taskData.affectedRows) {
+                response.status(201, {message: 'Возникла временная ошибка, обратитесь к тьютору'},res)
+            }else {
+                response.status(200,
+                    {message: 'Ваши изменения добавлены'},res)
+            }
+
+        }else {
+            response.status(404, {},res)
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+exports.updateInReportWithFile = async(req, res) => {
+
+    try {
+        const fileName = req.file.filename
+        const iomId = req.body.iomId
+        const taskId = req.body.taskId
+        const reportId = req.body.reportId
+        const token = req.body.token
+        const link = req.body.link.trim()
+        const content = req.body.content.trim();
+
+        const id = await userId(req.db,token)
+        const studentId = id[0]['user_id']
+        const accessSQl = `SELECT tutor_id FROM relationship_student_iom WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`
+        let [access] = await req.db.execute(accessSQl)
+
+        if(access.length) {
+            const tblCollection = tblMethod.tbleCollection(access[0]['tutor_id'])
+            const tbl = tblCollection.report
+            const taskSql = `UPDATE ${tbl} SET content ="${content}", link = "${link}", file_path="${fileName}", accepted = 0,
+                             on_check = 1, created_at = CURRENT_TIMESTAMP
+                             WHERE id = ${reportId} AND exercises_id = ${taskId}`
+            let [taskData] = await req.db.execute(taskSql)
+
+            if(!taskData.affectedRows) {
+                response.status(201, {message: 'Возникла временная ошибка, обратитесь к тьютору'},res)
+            }else {
+                response.status(200,
+                    {message: 'Ваши изменения добавлены'},res)
+            }
 
         }else {
             response.status(404, {},res)

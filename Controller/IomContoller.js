@@ -298,13 +298,15 @@ exports.getStatusToPendingFinish = async(req, res) => {
 }
 
 
-exports.getPendingData = async(req, res) => {
+exports.getPendingDataOrFinished = async(req, res) => {
     try {
-
-        const {token} = req.body
+        const {token, status,iomId} = req.body
         const id = await userId(req.db,token)
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
-        let exerciseSql = `SELECT 
+        let exerciseSql;
+
+        if(!iomId) {
+            exerciseSql = `SELECT 
                             t.id_exercises,
                             t.iom_id, 
                             t.title,
@@ -313,12 +315,47 @@ exports.getPendingData = async(req, res) => {
                             t.mentor,
                             tag.id_tag,
                             tag.title_tag,
+                            iom.title as iom_title,
+                            s.name,
+                            s.surname,
+                            s.patronymic,
+                            s.user_id,
                             DATE_FORMAT(t.term, '%d.%m.%Y') as term,
-                            t.tag_id
-        FROM ${tblCollection.report} as report  
-        INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
-        INNER JOIN tag ON t.tag_id = tag.id_tag
-        WHERE report.accepted = 0`
+                            t.tag_id,
+                            report.accepted
+            FROM ${tblCollection.report} as report  
+            INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
+            INNER JOIN ${tblCollection.iom} as iom ON t.iom_id = iom.iom_id 
+            INNER JOIN students as s ON report.student_id = s.user_id 
+            INNER JOIN tag ON t.tag_id = tag.id_tag
+            WHERE report.accepted = ${status}`
+        }else {
+            exerciseSql = `SELECT 
+                            t.id_exercises,
+                            t.iom_id, 
+                            t.title,
+                            t.description,
+                            t.link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            iom.title as iom_title,
+                            s.name,
+                            s.surname,
+                            s.patronymic,
+                            s.user_id,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                            t.tag_id,
+                            report.accepted
+            FROM ${tblCollection.report} as report  
+            INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
+            INNER JOIN ${tblCollection.iom} as iom ON t.iom_id = iom.iom_id 
+            INNER JOIN students as s ON report.student_id = s.user_id 
+            INNER JOIN tag ON t.tag_id = tag.id_tag
+            WHERE report.accepted = ${status} AND report.iom_id = "${iomId}"`
+
+        }
+
         const [exerciseData] = await req.db.execute(exerciseSql)
 
         if(!exerciseData.length) {
@@ -332,6 +369,99 @@ exports.getPendingData = async(req, res) => {
         return e
     }
 }
+
+exports.getStudentAnswer = async(req, res) => {
+
+    try {
+        const {token, iomId, exId, studentId} = req.body
+        const id = await userId(req.db,token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        const sql = `SELECT 
+                            t.id_exercises,
+                            t.iom_id, 
+                            t.title as ex_title,
+                            t.description as ex_description,
+                            t.link as ex_link,
+                            t.mentor,
+                            tag.id_tag,
+                            tag.title_tag,
+                            iom.title as iom_title,
+                            s.name,
+                            s.surname,
+                            s.patronymic,
+                            s.user_id,
+                            DATE_FORMAT(t.term, '%d.%m.%Y') as ex_term,
+                            DATE_FORMAT(report.created_at, '%d.%m.%Y') as answer_created,
+                            t.tag_id,
+                            report.accepted,
+                            report.tutor_comment,
+                            report.content as answer_content,
+                            report.link as answer_link
+            FROM ${tblCollection.report} as report  
+            INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 
+            INNER JOIN ${tblCollection.iom} as iom ON t.iom_id = iom.iom_id 
+            INNER JOIN students as s ON report.student_id = s.user_id 
+            INNER JOIN tag ON t.tag_id = tag.id_tag
+            WHERE report.student_id = "${studentId}" AND report.iom_id = "${iomId}" AND report.exercises_id = ${exId}`
+
+        const [taskData] = await req.db.execute(sql)
+
+        if(!taskData.length) {
+            response.status(201, {},res)
+        }else {
+            response.status(200,
+                taskData[0],res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+
+exports.successTask = async(req, res) => {
+    try {
+        const {token, iomId, exId, studentId} = req.body
+        const id = await userId(req.db,token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+
+        const sql = `UPDATE  ${tblCollection.report} SET accepted = 1, on_check = 0, tutor_comment ='' WHERE iom_id="${iomId}" AND exercises_id = ${exId} 
+                     AND student_id = "${studentId}"`
+
+        const [result] = await req.db.execute(sql)
+
+        if(!result.affectedRows) {
+            response.status(201, {message:"Ошибка при одобрении. Обратиетсь к разработчикам"},res)
+        }else {
+            response.status(200,{message:"Ответ слушателя принят"},res)
+        }
+
+    }catch (e) {
+        console.log(e)
+    }
+}
+
+exports.correctionTask = async(req, res) => {
+    try {
+        const {token, iomId, exId, studentId, comment} = req.body
+        const id = await userId(req.db,token)
+        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+
+        const sql = `UPDATE  ${tblCollection.report} SET accepted = 2, tutor_comment = "${comment}", on_check = 0   WHERE iom_id="${iomId}" AND exercises_id = ${exId} 
+                     AND student_id = "${studentId}"`
+
+        const [result] = await req.db.execute(sql)
+
+        if(!result.affectedRows) {
+            response.status(201, {message:"Ошибка при выполнении операции. Обратиетсь к разработчикам"},res)
+        }else {
+            response.status(200,{message:"Ответ отправлен на доработку"},res)
+        }
+
+    }catch (e) {
+        console.log(e)
+    }
+}
+
 
 exports.getTask = async(req, res) => {
 

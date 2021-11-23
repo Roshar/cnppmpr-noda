@@ -4,9 +4,22 @@ module.exports = (app) => {
     const passport = require('passport')
     const multer = require('multer');
     const path = require('path')
+    const fs = require('fs');
     const storage = multer.diskStorage({
         destination: function (req, file, cb) {
-            cb(null, 'uploads/avatar')
+            console.log('destination')
+            console.log(file)
+            console.log(req.body)
+            console.log('destinationEnd')
+            if(file.fieldname === 'file') {
+                cb(null, 'uploads/avatar')
+            }else if(file.fieldname === 'answer') {
+                if (!fs.existsSync('uploads/answer/' + file.originalname)){
+                    fs.mkdirSync('uploads/answer/' + file.originalname);
+                }
+                cb(null, 'uploads/answer/' + file.originalname)
+            }
+
         },
         filename: function (req, file, cb) {
             cb(null, file.originalname + '.'+file.mimetype.split('/')[1])
@@ -15,23 +28,45 @@ module.exports = (app) => {
     const upload = multer({
         storage: storage,
         limits: {
-            fields: 5,
-            fieldNameSize: 4, // TODO: Check if this size is enough
-            fieldSize: 2000, //TODO: Check if this size is enough
+            fields: 8,
+            fieldNameSize: 40, // TODO: Check if this size is enough
+            fieldSize: 20000, //TODO: Check if this size is enough
                                  // TODO: Change this line after compression
             fileSize: 5000000, // 5 МБ
         },
         fileFilter: function(req, file, cb){
+            console.log('fileFilter')
             console.log(file)
+            console.log('fileFilterEnd')
             checkFileType(file, cb);
         }
     })
     function checkFileType(file, cb){
-        if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png'){
-            return cb(null,true);
-        }else {
-            return cb('Error: Images Only!');
+        console.log('checkFile')
+        console.log(file)
+        console.log('checkFileEnd')
+        if(file.fieldname === 'file'){
+            if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png'){
+                return cb(null,true);
+            }else {
+                return cb('Error: Images Only!');
+            }
+        }else if(file.fieldname === 'answer'){
+            if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png'
+                || file.mimetype === 'application/msword' || file.mimetype === 'application/pdf'
+                || file.mimetype === 'application/doc' || file.mimetype === 'application/docx'
+                || file.mimetype == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                || file.mimetype == 'application/vnd.ms-excel' ||file.mimetype == 'application/vnd.ms-excel'
+                || file.mimetype == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                || file.mimetype == 'application/vnd.ms-powerpoint'
+                || file.mimetype == 'application/vnd.openxmlformats-officedocument.presentationml.presentation'){
+                return cb(null,true);
+            }else {
+                return cb('Error: ONLY PDF DOC IMG formats!');
+            }
         }
+
+
     }
     const authCtrl = require('../Controller/AuthController')
     const disciplinesCtrl = require('./../Controller/DisciplinesController')
@@ -94,7 +129,10 @@ module.exports = (app) => {
     // app.route('/api/user/changeAvatar').post( usersCtrl.changeAvatar)
 
     app.route('/api/iom/getData').post(iomCtrl.getData)
-    app.route('/api/iom/getPendingData').post(iomCtrl.getPendingData)
+    app.route('/api/iom/getStudentAnswer').post(iomCtrl.getStudentAnswer)
+    app.route('/api/iom/successTask').post(iomCtrl.successTask)
+    app.route('/api/iom/correctionTask').post(iomCtrl.correctionTask)
+    app.route('/api/iom/getPendingDataOrFinished').post(iomCtrl.getPendingDataOrFinished)
     app.route('/api/iom/getStatusFinished').post(iomCtrl.getStatusFinished)
     app.route('/api/iom/getStatusToPendingFinish').post(iomCtrl.getStatusToPendingFinish)
 
@@ -121,7 +159,13 @@ module.exports = (app) => {
     app.route('/api/student/checkIssetMyIom').post(studentCtrl.checkIssetMyIom)
     app.route('/api/student/getExercisesFromMyIom').post(studentCtrl.getExercisesFromMyIom)
     app.route('/api/student/getMyTaskById').post(studentCtrl.getMyTaskById)
+    app.route('/api/student/getCommentsByTask').post(studentCtrl.getCommentsByTask)
+    app.route('/api/student/getStatisticByIOM').post(studentCtrl.getStatisticByIOM)
+    app.route('/api/student/sendCommentsForTask').post(studentCtrl.sendCommentsForTask)
     app.route('/api/student/insertInReportWithoutFile').post(studentCtrl.insertInReportWithoutFile)
+    app.route('/api/student/insertInReportWithFile').post(upload.single('answer'), studentCtrl.insertInReportWithFile)
+    app.route('/api/student/updateInReportWithoutFile').post(studentCtrl.updateInReportWithoutFile)
+    app.route('/api/student/updateInReportWithFile').post(upload.single('answer'), studentCtrl.updateInReportWithFile)
 
 
 
