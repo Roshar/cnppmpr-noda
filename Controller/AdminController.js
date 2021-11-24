@@ -150,9 +150,10 @@ exports.getLastUsers = async (req, res) => {
                 INNER JOIN users as u ON t.user_id = u.id_user 
                 WHERE  u.status IS NULL or u.status = 'on'  ORDER by u.created_at DESC`
         }
+        console.log(sql)
         let [sqlData] = await req.db.execute(sql)
         if(!sqlData.length) {
-            response.status(201, {},res)
+            response.status(201, [],res)
         }else {
             response.status(200,
                 sqlData,res)
