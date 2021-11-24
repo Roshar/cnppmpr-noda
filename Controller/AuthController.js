@@ -86,12 +86,13 @@ exports.signup = async (req, res) => {
 
 exports.singin = async (req, res) => {
     try {
+        console.log('singINNNNN')
         const {login, password} = req.body
         const sql = `select id, id_user, login, password, role, status from users where login = "${login}"`;
         const [rows] = await req.db.execute(sql)
         const nets = networkInterfaces();
         const address = Object.create(null); // Or just '{}', an empty object
-
+        console.log('singINNNNN2222')
         for (const name of Object.keys(nets)) {
             for (const net of nets[name]) {
                 // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
@@ -103,6 +104,7 @@ exports.singin = async (req, res) => {
                 }
             }
         }
+        console.log('singINNNNN33333')
 
         if(rows.length <= 0){
             response.status(401, {message:`Пользователь с таким email ${login} не найден!`},res)
@@ -123,10 +125,12 @@ exports.singin = async (req, res) => {
                     const online = 'online'
                     const ip = address['en0']
                     const sql2 = "INSERT INTO `authorization`(`token_key`,`login`,`user_id`,`role`,`status`,`status_network`,`ip_address`) VALUES ('" + `Bearer ${token}` + "','" + rows[0].login + "','" + rows[0]['id_user'] + "','" + rows[0].role + "','" + rows[0].status + "','" + online +"','" + ip +"')"
+                    console.log(sql2)
                     const [row2] = await req.db.execute(sql2)
+                    console.log(row2)
 
                     if(!row2){
-                        response.status(400,{message:'Ошибка при авторизации, попробуйте снова'},res)
+                        response.status(401,{message:'Ошибка при авторизации, попробуйте снова'},res)
                         return false
                     }
                     response.status(200,

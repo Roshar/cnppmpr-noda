@@ -488,7 +488,6 @@ exports.getStatisticByIOM = async(req, res) => {
         let pendingTaskSQL = ` SELECT COUNT(id) as id FROM ${tblCollection.report} WHERE iom_id = "${iomId}"
                        AND student_id = "${userId}" AND on_check = 1`
 
-
         let [finishedTask] = await req.db.execute(finishedTaskSQL)
         let [onEditTask] = await req.db.execute(onEditTaskSQL)
         let [pendingTask] = await req.db.execute(pendingTaskSQL)
