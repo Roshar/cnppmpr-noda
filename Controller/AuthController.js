@@ -90,6 +90,7 @@ exports.singin = async (req, res) => {
         const {login, password} = req.body
         const sql = `select id, id_user, login, password, role, status from users where login = "${login}"`;
         const [rows] = await req.db.execute(sql)
+        console.log(rows)
         const nets = networkInterfaces();
         const address = Object.create(null); // Or just '{}', an empty object
         console.log('singINNNNN2222')
