@@ -137,7 +137,7 @@ exports.getLastUsers = async (req, res) => {
                 INNER JOIN schools as s ON t.school_id = s.id_school
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis
                 INNER JOIN users as u ON t.user_id = u.id_user 
-                WHERE  u.status IS NULL or u.status = 'on'  ORDER by u.created_at DESC`
+                WHERE  u.status IS NULL OR u.status = 'on'  ORDER by u.created_at DESC`
         }else if(tblName === 'tutors'){
             sql =
                 `SELECT 
@@ -148,11 +148,11 @@ exports.getLastUsers = async (req, res) => {
                 FROM ${tblName} as t 
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis
                 INNER JOIN users as u ON t.user_id = u.id_user 
-                WHERE  u.status IS NULL or u.status = 'on'  ORDER by u.created_at DESC`
+                WHERE  u.status IS NULL OR u.status = 'on'  ORDER by u.created_at DESC`
         }
 
         let [sqlData] = await req.db.execute(sql)
-        console.log(sqlData)
+
         if(!sqlData.length) {
             response.status(201, [],res)
         }else {
