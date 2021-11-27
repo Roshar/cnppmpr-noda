@@ -81,6 +81,7 @@ module.exports = (app) => {
     const conCtrl = require('../Controller/ConversationController')
     const globalLib = require('../Controller/GlobalLibraryController')
     const studentCtrl = require('../Controller/StudentController')
+    const finishedCtrl = require('../Controller/FinishedController')
 
     // get all users from tbl user
     app.route('/api/users').get(usersCtrl.getAllUsers)
@@ -166,6 +167,8 @@ module.exports = (app) => {
     app.route('/api/student/insertInReportWithFile').post(upload.single('answer'), studentCtrl.insertInReportWithFile)
     app.route('/api/student/updateInReportWithoutFile').post(studentCtrl.updateInReportWithoutFile)
     app.route('/api/student/updateInReportWithFile').post(upload.single('answer'), studentCtrl.updateInReportWithFile)
+    // finished education
+    app.route('/api/finished/studentEducation').post(finishedCtrl.studentEducation)
 
 
 
@@ -206,6 +209,7 @@ module.exports = (app) => {
     app.route('/api/conversation/searchUser').post(conCtrl.searchUser)
     app.route('/api/conversation/createConversationWithoutInsert').post(conCtrl.createConversationWithoutInsert)
     //app.route('/api/conversation/getUsersForConversation').post(conCtrl.getUsersForConversation)
+
 
     // ADMIN
 
