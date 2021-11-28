@@ -169,6 +169,9 @@ module.exports = (app) => {
     app.route('/api/student/updateInReportWithFile').post(upload.single('answer'), studentCtrl.updateInReportWithFile)
     // finished education
     app.route('/api/finished/studentEducation').post(finishedCtrl.studentEducation)
+    app.route('/api/finished/checkStudentIOM').post(finishedCtrl.checkStudentIOM)
+    app.route('/api/finished/getFinishedCourses').post(finishedCtrl.getFinishedCourses)
+    app.route('/api/finished/getStudentsForTutor').post(finishedCtrl.getStudentsForTutor)
 
 
 

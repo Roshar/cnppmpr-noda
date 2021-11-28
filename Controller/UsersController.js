@@ -62,7 +62,6 @@ exports.deleteTutor = async(req, res) => {
         const rsi = `DELETE FROM relationship_student_iom  WHERE tutor_id = "${tutorId}"`
         const permissionToDelete = `DELETE FROM permission_to_delete_iom  WHERE tutor_id = "${tutorId}"`
         const globalWorkplaceTutors = `DELETE FROM global_workplace_tutors  WHERE user_id = "${tutorId}"`
-        const report = `DELETE FROM report WHERE tutor_id = "${tutorId}"`
         const countIom = `DELETE FROM count_iom WHERE tutor_id = "${tutorId}"`
         const [delTut] = await req.db.execute(tutors)
         const [delUser] = await req.db.execute(users)
@@ -70,7 +69,6 @@ exports.deleteTutor = async(req, res) => {
                       await req.db.execute(rts)
                       await req.db.execute(rsi)
                       await req.db.execute(permissionToDelete)
-                      await req.db.execute(report)
                       await req.db.execute(countIom)
                       await req.db.execute(countIom)
         const groupIdDelSQl = `SELECT id FROM groups_relationship  WHERE tutor_id = "${tutorId}"`
@@ -103,22 +101,6 @@ exports.deleteTutor = async(req, res) => {
             return true
         }
 
-        // console.log(deleteTblIom)
-        // console.log(deleteTblLibrary)
-        // console.log(deleteTblMentor)
-        // console.log(deleteTblReport)
-        // console.log(deleteTblStudent)
-        // console.log(deleteTblSubTypeTableIom)
-        // console.log(tutors)
-        // console.log(users)
-        // console.log(rts)
-        // console.log(rsi)
-        // console.log(permissionToDelete)
-        // console.log(globalWorkplaceTutors)
-        // console.log(report)
-        // console.log(countIom)
-        // console.log(deleteGroupRel)
-        // console.log(deleteGroup)
 
     }else {
         response.status(201, {message: 'Нет доступа для выполнения данной операции'}, res)
@@ -139,12 +121,10 @@ exports.deleteStudent = async(req, res) => {
             const issetIom = issetTutorForStudent[0]['isset_iom']
             const tblCollection = tblMethod.tbleCollection(tutorId)
             const deleteDependencies1 = `DELETE FROM relationship_tutor_student WHERE s_user_id = "${idStudent}" AND t_user_id = "${tutorId}"`
-            const deleteReport = `DELETE FROM report WHERE student_id = "${idStudent}" AND tutor_id = "${tutorId}"`
+
 
             const deleteInAdminTbl= `DELETE FROM admin_student_iom_status WHERE student_id = "${idStudent}"`
                                      await req.db.execute(deleteDependencies1)
-                                     await req.db.execute(deleteReport)
-
                                      await req.db.execute(deleteInAdminTbl)
 
             if(issetIom === 1) {
@@ -205,6 +185,15 @@ exports.getDataAdminAccount = async(req, res) => {
 
 exports.getUserData = async(req, res) => {
     try {
+        // const io = req.app.get('socketio');
+        // setInterval( function() {
+        //
+        //     let msg = Math.random();
+        //     io.emit('message', msg);
+        //     console.log (msg);
+        //
+        // }, 1000);
+
 
         const sql = `SELECT * FROM authorization WHERE token_key = "${req.body.user}" `
         const [userData] = await req.db.execute(sql)
@@ -286,9 +275,9 @@ exports.getFromTutorTbls = async (req, res) => {
     const [countStudentsIom] = await req.db.execute(countStudentsWithIom)
 
     // кол-во завершивших ИОМы
-    const finishedIomSql = `SELECT COUNT(*) FROM report WHERE tutor_id = "${id_user[0]['user_id']}"`;
+    const finishedIomSql = `SELECT COUNT(*) FROM relationship_student_iom WHERE tutor_id = "${id_user[0]['user_id']}" 
+                            AND status = 1`;
     const [finishedIom] = await req.db.execute(finishedIomSql)
-
 
     const data = [{ countIom: countIom[0]['COUNT(*)'],
                     studentIom: countStudentsIom[0]['COUNT(*)'],

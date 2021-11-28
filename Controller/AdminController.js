@@ -306,7 +306,8 @@ exports.getDependenciesTutor = async (req, res) => {
              gender = await req.db.execute(sql5)
         }
 
-        let sql3 = `SELECT COUNT(id) as reports FROM report WHERE tutor_id = "${userId}"`
+        let sql3 = `SELECT COUNT(id) as reports FROM relationship_student_iom WHERE tutor_id = "${userId}" AND status = 1`
+        
         let [countReports] = await req.db.execute(sql3)
 
 
