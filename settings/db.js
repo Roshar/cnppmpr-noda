@@ -6,12 +6,6 @@ class DB {
     static connect() {
         return mysql.createConnection({
 
-            //ВНЕШНЯ БАЗА НА БЕГЕТ
-            // host: "govzalla.beget.tech",
-            // user: "govzalla_it_gov",
-            // password: "2404141rA!",
-            // database: "govzalla_it_gov"
-
             host: "localhost",
             user: "root",
             password: "1234567890",

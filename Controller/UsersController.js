@@ -6,19 +6,6 @@ const userId = require('./../use/getUserId')
 const roleTbl = require('./../use/roleTbl')
 
 
-// exports.getAdminData = async(req, res) => {
-//
-//     const sql = `SELECT * FROM authorization WHERE token_key = "${req.body.user}" `
-//     const [userData] = await req.db.execute(sql)
-//
-//     if(userData.length <= 0) {
-//         response.status(401, {message:"пусто"}, res)
-//     }else {
-//         response.status(200, userData, res)
-//         return true
-//     }
-// }
-
 exports.getAdminData = async(req, res) => {
 
     const admin = await userId(req.db,req.body.user)
@@ -185,16 +172,6 @@ exports.getDataAdminAccount = async(req, res) => {
 
 exports.getUserData = async(req, res) => {
     try {
-        // const io = req.app.get('socketio');
-        // setInterval( function() {
-        //
-        //     let msg = Math.random();
-        //     io.emit('message', msg);
-        //     console.log (msg);
-        //
-        // }, 1000);
-
-
         const sql = `SELECT * FROM authorization WHERE token_key = "${req.body.user}" `
         const [userData] = await req.db.execute(sql)
         const tblName = userData[0].role
