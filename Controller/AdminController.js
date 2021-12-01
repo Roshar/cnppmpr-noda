@@ -4,8 +4,6 @@ const DB = require('./../settings/db')
 const tblMethod = require('./../use/tutorTblCollection')
 
 
-
-
 exports.getAllIomDataByTutorId = async(req,res) => {
     try {
         const tutorId = req.body.tutorId
@@ -168,7 +166,6 @@ exports.getLastUsers = async (req, res) => {
 exports.getUsersActive = async (req, res) => {
     try {
         const tblName = req.body.tbl
-
         let sql
         if(tblName === 'students') {
             sql =
@@ -307,7 +304,7 @@ exports.getDependenciesTutor = async (req, res) => {
         }
 
         let sql3 = `SELECT COUNT(id) as reports FROM relationship_student_iom WHERE tutor_id = "${userId}" AND status = 1`
-        
+
         let [countReports] = await req.db.execute(sql3)
 
 
@@ -322,9 +319,11 @@ exports.getDependenciesTutor = async (req, res) => {
 
 exports.getUsersWithBanStatus = async (req, res) => {
     try {
-
         const tblName = req.body.tbl
-        let sql =
+
+        let sql;
+        if(tblName === 'students'){
+            sql =
                 `SELECT 
                 t.user_id, t.name, t.surname, t.patronymic, t.phone, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, t.school_id, t.area_id, 
                 a.title_area,
@@ -337,8 +336,19 @@ exports.getUsersWithBanStatus = async (req, res) => {
                 INNER JOIN schools as s ON t.school_id = s.id_school
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis
                 INNER JOIN users as u ON t.user_id = u.id_user WHERE u.status = 'ban'`
+        }else {
+            sql =
+                `SELECT 
+                t.user_id, t.name, t.surname, t.patronymic, t.gender, DATE_FORMAT(t.birthday, '%d.%m.%Y') as birthday, t.discipline_id, 
+                d.title_discipline,
+                u.status,
+                DATE_FORMAT(u.created_at, '%d.%m.%Y | %H:%i:%s') as created
+                FROM ${tblName} as t 
+                INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                INNER JOIN users as u ON t.user_id = u.id_user WHERE u.status = 'ban'`
+        }
 
-            let [sqlData] = await req.db.execute(sql)
+        let [sqlData] = await req.db.execute(sql)
 
         if(!sqlData.length) {
             response.status(201, {},res)
@@ -996,17 +1006,18 @@ exports.getGroupById =  async(req,res) => {
     }
 }
 
+
 exports.getAppointedStudentsCurrentGroup = async(req, res) => {
     try {
         const tutorId = req.body.tutorId
         const groupId = req.body.groupId
-        let sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, a.title_area, sch.school_name,
-        s.gender, isset.isset_iom, isset.finish_iom  FROM students as s 
+        let sql = `SELECT rts.s_user_id, rts.t_user_id, s.user_id, s.name, s.surname,s.patronymic, a.title_area, sch.school_name,
+        s.gender, rsi.status, rsi.iom_id, rts.isset_iom  FROM relationship_tutor_student as rts 
+        INNER JOIN students as s ON rts.s_user_id = s.user_id
+        LEFT OUTER JOIN relationship_student_iom as rsi ON rts.s_user_id = rsi.user_id
         INNER JOIN area as a ON s.area_id = a.id_area
         INNER JOIN schools as sch ON s.school_id = sch.id_school
-        INNER JOIN admin_student_iom_status as isset ON isset.student_id = s.user_id
-        INNER JOIN relationship_tutor_student as rsi ON s.user_id = rsi.s_user_id
-        WHERE rsi.t_user_id  = "${tutorId}" AND rsi.group_id = ${groupId}`
+        WHERE rts.t_user_id = "${tutorId}"`
         const [sqlData] = await req.db.execute(sql)
 
         if(!sqlData.length) {

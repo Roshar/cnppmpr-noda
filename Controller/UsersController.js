@@ -108,11 +108,7 @@ exports.deleteStudent = async(req, res) => {
             const issetIom = issetTutorForStudent[0]['isset_iom']
             const tblCollection = tblMethod.tbleCollection(tutorId)
             const deleteDependencies1 = `DELETE FROM relationship_tutor_student WHERE s_user_id = "${idStudent}" AND t_user_id = "${tutorId}"`
-
-
-            const deleteInAdminTbl= `DELETE FROM admin_student_iom_status WHERE student_id = "${idStudent}"`
                                      await req.db.execute(deleteDependencies1)
-                                     await req.db.execute(deleteInAdminTbl)
 
             if(issetIom === 1) {
                 const deleteDependencies2 = `DELETE FROM relationship_student_iom WHERE user_id = "${idStudent}" AND tutor_id = "${tutorId}"`

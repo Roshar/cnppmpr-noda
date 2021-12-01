@@ -45,11 +45,6 @@ exports.signup = async (req, res) => {
             let [result]  = await req.db.execute(sqlUser)
             let [result2]  = await req.db.execute(sqlOption)
 
-            if(role === "student") {
-                const insertSql = "INSERT INTO `admin_student_iom_status`(`student_id`) VALUES ('" + id_user + "')";
-                await req.db.execute(insertSql)
-
-            }
 
             if(role === "tutor") {
                 const tblCollection = tblMethod.tbleCollection(id_user)
