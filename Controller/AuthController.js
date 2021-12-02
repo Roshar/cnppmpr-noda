@@ -12,11 +12,10 @@ const generationAvatar = require('./../use/randomImage')
 
 exports.signup = async (req, res) => {
     try{
-        const {login, password, confirmPassword, first_name, surname, patronymic="", area="", school="", phone, discipline, gender, birthday="1000-01-01" } = req.body
+        const {login, password, confirmPassword, first_name, role, surname, patronymic="", area="", school="", phone, discipline, gender, birthday="1000-01-01" } = req.body
         let id_user = uniqid()
-        let role;
+        let roleCheck;
         let sqlOption;
-        let sqlFail;
         const sql = `SELECT * FROM users WHERE login = "${login}"`;
         let [result] = await req.db.execute(sql)
 
@@ -30,48 +29,49 @@ exports.signup = async (req, res) => {
 
             const avatar = 'no_avatar.png'
 
-            if(req.body.code && req.body.code == "5808"){
-                role = "tutor"
+            if(req.body.code && req.body.code === "5808" && role === 'tutor'){
+                roleCheck = "tutor"
                 sqlOption = "INSERT INTO `tutors`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`gender`,`birthday`, `avatar` ) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + gender + "','" + birthday + "','" + avatar + "')";
-            } else if(req.body.code && req.body.code == "7777"){
-                role = "admin"
+            } else if(req.body.code && req.body.code === "7777" && role === 'admin'){
+                roleCheck = "admin"
                 sqlOption = "INSERT INTO `admins`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`gender`,`birthday`,`avatar`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + gender + "','" + birthday + "','" + avatar + "')";
-            }
-            else{
-                role = "student"
+            } else if(req.body.code && role === 'student') {
+                roleCheck = "student"
                 sqlOption = "INSERT INTO `students`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`area_id`,`school_id`,`gender`,`birthday`, `avatar`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + area + "','" + school + "','" + gender + "','" + birthday + "','" + avatar + "')";
             }
-            let sqlUser = "INSERT INTO `users`(`id_user`,`login`,`password`,`role`) VALUES ('" + id_user + "','" + login + "','" + hashPass + "','" + role + "')";
-            let [result]  = await req.db.execute(sqlUser)
-            let [result2]  = await req.db.execute(sqlOption)
-
-
-            if(role === "tutor") {
-                const tblCollection = tblMethod.tbleCollection(id_user)
-                const tutorOptions = "INSERT INTO `global_workplace_tutors` (`user_id`,`table_iom`,`table_student`,`table_mentor`,`table_report`,`table_library`,`table_sub_type_iom`,`discipline_id`) VALUES ('" + id_user + "','" + tblCollection.iom + "','" + tblCollection.student + "','" + tblCollection.mentor + "','" + tblCollection.report + "','" + tblCollection.library + "','" + tblCollection.subTypeTableIom + "','" + discipline + "')";
-                const generationIom = `CREATE TABLE ${tblCollection.iom} (id SERIAL NOT NULL, iom_id VARCHAR(255) NOT NULL, title VARCHAR(255) NOT NULL, description TEXT NULL DEFAULT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = InnoDB`;
-                const generationStudents = `CREATE TABLE ${tblCollection.student} (id SERIAL NOT NULL, student_id VARCHAR(255) NOT NULL , iom_id VARCHAR(255) NOT NULL ) ENGINE = InnoDB`;
-                const generationMentors = `CREATE TABLE ${tblCollection.mentor} (id SERIAL NOT NULL, firstname VARCHAR(255) NOT NULL ,lastname VARCHAR(255) NOT NULL, patronymic VARCHAR(255) DEFAULT NULL, area_id INT NOT NULL, discipline_id INT NOT NULL) ENGINE = InnoDB`;
-                const generationReports = `CREATE TABLE ${tblCollection.report} ( id SERIAL NOT NULL ,iom_id VARCHAR(255) NOT NULL , student_id VARCHAR(255) NOT NULL , exercises_id INT NOT NULL , tag_id INT NOT NULL, content LONGTEXT NULL DEFAULT NULL, link VARCHAR(255) NULL DEFAULT NULL, file_path VARCHAR(255) NULL DEFAULT NULL, accepted INT NOT NULL DEFAULT '0', on_check INT NOT NULL DEFAULT '0', tutor_comment TEXT NULL DEFAULT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ) ENGINE = InnoDB`;
-                const generationLibrary = `CREATE TABLE ${tblCollection.library} (id SERIAL NOT NULL, user_id VARCHAR(255) NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , tag_id INT NOT NULL ) ENGINE = InnoDB`;
-                const generationSubtypeIom = `CREATE TABLE ${tblCollection.subTypeTableIom} ( id_exercises SERIAL NOT NULL , iom_id VARCHAR(255) NOT NULL , title VARCHAR(255) NOT NULL , description TEXT NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , mentor INT NOT NULL , term DATE NOT NULL  , tag_id INT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = InnoDB;`
-                await req.db.execute(tutorOptions)
-                await req.db.execute(generationIom)
-                await req.db.execute(generationStudents)
-                await req.db.execute(generationMentors)
-                await req.db.execute(generationReports)
-                await req.db.execute(generationLibrary)
-                await req.db.execute(generationSubtypeIom)
+            else{
+                roleCheck = null
             }
 
-            if(result && result2){
-                response.status(200,{message:'Регистрация прошла успешно!'},res)
-            }else{
-                if(result){
-                    sqlFail = `DELETE FROM users WHERE login = "${login}"`
-                    await req.db.execute(sqlFail)
+            if(roleCheck) {
+                let sqlUser = "INSERT INTO `users`(`id_user`,`login`,`password`,`role`) VALUES ('" + id_user + "','" + login + "','" + hashPass + "','" + role + "')";
+                let [result]  = await req.db.execute(sqlUser)
+                let [result2]  = await req.db.execute(sqlOption)
+                if(roleCheck === "tutor") {
+                    const tblCollection = tblMethod.tbleCollection(id_user)
+                    const tutorOptions = "INSERT INTO `global_workplace_tutors` (`user_id`,`table_iom`,`table_student`,`table_mentor`,`table_report`,`table_library`,`table_sub_type_iom`,`discipline_id`) VALUES ('" + id_user + "','" + tblCollection.iom + "','" + tblCollection.student + "','" + tblCollection.mentor + "','" + tblCollection.report + "','" + tblCollection.library + "','" + tblCollection.subTypeTableIom + "','" + discipline + "')";
+                    const generationIom = `CREATE TABLE ${tblCollection.iom} (id SERIAL NOT NULL, iom_id VARCHAR(255) NOT NULL, title VARCHAR(255) NOT NULL, description TEXT NULL DEFAULT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = InnoDB`;
+                    const generationStudents = `CREATE TABLE ${tblCollection.student} (id SERIAL NOT NULL, student_id VARCHAR(255) NOT NULL , iom_id VARCHAR(255) NOT NULL ) ENGINE = InnoDB`;
+                    const generationMentors = `CREATE TABLE ${tblCollection.mentor} (id SERIAL NOT NULL, firstname VARCHAR(255) NOT NULL ,lastname VARCHAR(255) NOT NULL, patronymic VARCHAR(255) DEFAULT NULL, area_id INT NOT NULL, discipline_id INT NOT NULL) ENGINE = InnoDB`;
+                    const generationReports = `CREATE TABLE ${tblCollection.report} ( id SERIAL NOT NULL ,iom_id VARCHAR(255) NOT NULL , student_id VARCHAR(255) NOT NULL , exercises_id INT NOT NULL , tag_id INT NOT NULL, content LONGTEXT NULL DEFAULT NULL, link VARCHAR(255) NULL DEFAULT NULL, file_path VARCHAR(255) NULL DEFAULT NULL, accepted INT NOT NULL DEFAULT '0', on_check INT NOT NULL DEFAULT '0', tutor_comment TEXT NULL DEFAULT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ) ENGINE = InnoDB`;
+                    const generationLibrary = `CREATE TABLE ${tblCollection.library} (id SERIAL NOT NULL, user_id VARCHAR(255) NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , tag_id INT NOT NULL ) ENGINE = InnoDB`;
+                    const generationSubtypeIom = `CREATE TABLE ${tblCollection.subTypeTableIom} ( id_exercises SERIAL NOT NULL , iom_id VARCHAR(255) NOT NULL , title VARCHAR(255) NOT NULL , description TEXT NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , mentor INT NOT NULL , term DATE NOT NULL  , tag_id INT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = InnoDB;`
+                    await req.db.execute(tutorOptions)
+                    await req.db.execute(generationIom)
+                    await req.db.execute(generationStudents)
+                    await req.db.execute(generationMentors)
+                    await req.db.execute(generationReports)
+                    await req.db.execute(generationLibrary)
+                    await req.db.execute(generationSubtypeIom)
                 }
-                response.status(400,{message:'Не получилось зарегистрировать пользователя!'},res)
+
+                if(result && result2){
+                    response.status(200,{message:'Регистрация прошла успешно!'},res)
+                }else{
+                    response.status(400,{message:'Не получилось зарегистрировать пользователя!'},res)
+                }
+            }else {
+                response.status(400,{message:'Не удалось зарегистрировать пользователя! Неверный код!'},res)
             }
         }
     }catch (e) {
@@ -81,14 +81,13 @@ exports.signup = async (req, res) => {
 
 exports.singin = async (req, res) => {
     try {
-        console.log('singINNNNN')
+
         const {login, password} = req.body
         const sql = `select id, id_user, login, password, role, status from users where login = "${login}"`;
         const [rows] = await req.db.execute(sql)
-        console.log(rows)
         const nets = networkInterfaces();
         const address = Object.create(null); // Or just '{}', an empty object
-        console.log('singINNNNN2222')
+
         for (const name of Object.keys(nets)) {
             for (const net of nets[name]) {
                 // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
@@ -100,7 +99,7 @@ exports.singin = async (req, res) => {
                 }
             }
         }
-        console.log('singINNNNN33333')
+
 
         if(rows.length <= 0){
             response.status(401, {message:`Пользователь с таким email ${login} не найден!`},res)
@@ -121,9 +120,9 @@ exports.singin = async (req, res) => {
                     const online = 'online'
                     const ip = address['en0']
                     const sql2 = "INSERT INTO `authorization`(`token_key`,`login`,`user_id`,`role`,`status`,`status_network`,`ip_address`) VALUES ('" + `Bearer ${token}` + "','" + rows[0].login + "','" + rows[0]['id_user'] + "','" + rows[0].role + "','" + rows[0].status + "','" + online +"','" + ip +"')"
-                    console.log(sql2)
+
                     const [row2] = await req.db.execute(sql2)
-                    console.log(row2)
+
 
                     if(!row2){
                         response.status(401,{message:'Ошибка при авторизации, попробуйте снова'},res)
@@ -153,7 +152,7 @@ exports.logout = async (req, res) => {
         const token = req.body.token
         const sql = 'DELETE FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
         const [rows] = await req.db.execute(sql)
-        console.log(rows)
+
         response.status(200, {"result":rows}, res)
     } catch (e) {
         console.log("Ошибка при выходе")
@@ -191,7 +190,7 @@ exports.sendCodeToMail = async(req, res) => {
                 subject: 'Attachments',
                 text: 'Ваш код доступа: '+ code
             })
-            console.log(emailResult)
+            // console.log(emailResult)
             response.status(200,{
                 message:'На ваш электронный адрес выслали письмо с кодом подтверждения',
                 code: hashcode

@@ -36,6 +36,9 @@ exports.getTutorData = async(req, res) => {
 
 
 exports.deleteTutor = async(req, res) => {
+
+    console.log(req.body)
+
     const code = req.body.code
     const tutorId = req.body.tutorId
     const admin = await userId(req.db,req.body.token)
@@ -43,51 +46,55 @@ exports.deleteTutor = async(req, res) => {
     const tblCollection = tblMethod.tbleCollection(tutorId)
 
     if(role === 'admin' && code === '5808'){
-        const tutors = `DELETE FROM tutors WHERE user_id = "${tutorId}"`
-        const users = `DELETE FROM users WHERE id_user = "${tutorId}"`
-        const rts = `DELETE FROM relationship_tutor_student  WHERE t_user_id = "${tutorId}"`
-        const rsi = `DELETE FROM relationship_student_iom  WHERE tutor_id = "${tutorId}"`
-        const permissionToDelete = `DELETE FROM permission_to_delete_iom  WHERE tutor_id = "${tutorId}"`
-        const globalWorkplaceTutors = `DELETE FROM global_workplace_tutors  WHERE user_id = "${tutorId}"`
-        const countIom = `DELETE FROM count_iom WHERE tutor_id = "${tutorId}"`
-        const [delTut] = await req.db.execute(tutors)
-        const [delUser] = await req.db.execute(users)
-        const [gwt] = await req.db.execute(globalWorkplaceTutors)
-                      await req.db.execute(rts)
-                      await req.db.execute(rsi)
-                      await req.db.execute(permissionToDelete)
-                      await req.db.execute(countIom)
-                      await req.db.execute(countIom)
-        const groupIdDelSQl = `SELECT id FROM groups_relationship  WHERE tutor_id = "${tutorId}"`
-        const [groupIdDel] = await req.db.execute(groupIdDelSQl)
-        if(groupIdDel.length) {
-            const id = groupIdDel[0]['id']
-            const deleteGroupRel = `DELETE FROM groups_relationship  WHERE tutor_id = ${id}`
-            const deleteGroup = `DELETE FROM groups_  WHERE id = ${id}`
-                                await req.db.execute(deleteGroupRel)
-                                await req.db.execute(deleteGroup)
+        try {
+            const tutors = `DELETE FROM tutors WHERE user_id = "${tutorId}"`
+            const users = `DELETE FROM users WHERE id_user = "${tutorId}"`
+            const rts = `DELETE FROM relationship_tutor_student  WHERE t_user_id = "${tutorId}"`
+            const rsi = `DELETE FROM relationship_student_iom  WHERE tutor_id = "${tutorId}"`
+            const permissionToDelete = `DELETE FROM permission_to_delete_iom  WHERE tutor_id = "${tutorId}"`
+            const globalWorkplaceTutors = `DELETE FROM global_workplace_tutors  WHERE user_id = "${tutorId}"`
+            const countIom = `DELETE FROM count_iom WHERE tutor_id = "${tutorId}"`
+            const [delTut] = await req.db.execute(tutors)
+            const [delUser] = await req.db.execute(users)
+            const [gwt] = await req.db.execute(globalWorkplaceTutors)
+            await req.db.execute(rts)
+            await req.db.execute(rsi)
+            await req.db.execute(permissionToDelete)
+            await req.db.execute(countIom)
+            await req.db.execute(countIom)
+            const groupIdDelSQl = `SELECT id FROM groups_relationship  WHERE tutor_id = "${tutorId}"`
+            const [groupIdDel] = await req.db.execute(groupIdDelSQl)
+            if(groupIdDel.length) {
+                const id = groupIdDel[0]['id']
+                const deleteGroupRel = `DELETE FROM groups_relationship  WHERE tutor_id = ${id}`
+                const deleteGroup = `DELETE FROM groups_  WHERE id = ${id}`
+                await req.db.execute(deleteGroupRel)
+                await req.db.execute(deleteGroup)
+            }
+
+            const deleteTblIom = `DROP TABLE ${tblCollection.iom}`
+            const deleteTblLibrary = `DROP TABLE ${tblCollection.library}`
+            const deleteTblMentor = `DROP TABLE ${tblCollection.mentor}`
+            const deleteTblReport = `DROP TABLE ${tblCollection.report}`
+            const deleteTblStudent = `DROP TABLE ${tblCollection.student}`
+            const deleteTblSubTypeTableIom = `DROP TABLE ${tblCollection.subTypeTableIom}`
+                                                await req.db.execute(deleteTblIom)
+                                                await req.db.execute(deleteTblLibrary)
+                                                await req.db.execute(deleteTblMentor)
+                                                await req.db.execute(deleteTblReport)
+                                                await req.db.execute(deleteTblStudent)
+                                                await req.db.execute(deleteTblSubTypeTableIom)
+
+            if(!delTut.affectedRows || !delUser.affectedRows || !gwt.affectedRows) {
+                response.status(201, {message:"ПРОИЗОШЕЛ СБОЙ ПРИ ВЫПОЛНЕНИИ ОПЕРАЦИИ.СРОЧНО ОБРАТИТЕСЬ К РАЗРАБОТЧИКАМ"}, res)
+            }else {
+                response.status(200, {message: 'Тьютор и все связанные с ним данные были удалены!'}, res)
+                return true
+            }
+        }catch (e) {
+            console.log(e.message)
+            console.log(e)
         }
-
-        const deleteTblIom = `DROP TABLE ${tblCollection.iom}`
-        const deleteTblLibrary = `DROP TABLE ${tblCollection.library}`
-        const deleteTblMentor = `DROP TABLE ${tblCollection.mentor}`
-        const deleteTblReport = `DROP TABLE ${tblCollection.report}`
-        const deleteTblStudent = `DROP TABLE ${tblCollection.student}`
-        const deleteTblSubTypeTableIom = `DROP TABLE ${tblCollection.subTypeTableIom}`
-                                await req.db.execute(deleteTblIom)
-                                await req.db.execute(deleteTblLibrary)
-                                await req.db.execute(deleteTblMentor)
-                                await req.db.execute(deleteTblReport)
-                                await req.db.execute(deleteTblStudent)
-                                await req.db.execute(deleteTblSubTypeTableIom)
-
-        if(!delTut.affectedRows || !delUser.affectedRows || !gwt.affectedRows) {
-            response.status(201, {message:"ПРОИЗОШЕЛ СБОЙ ПРИ ВЫПОЛНЕНИИ ОПЕРАЦИИ.СРОЧНО ОБРАТИТЕСЬ К РАЗРАБОТЧИКАМ"}, res)
-        }else {
-            response.status(200, {message: 'Тьютор и все связанные с ним данные были удалены!'}, res)
-            return true
-        }
-
 
     }else {
         response.status(201, {message: 'Нет доступа для выполнения данной операции'}, res)
