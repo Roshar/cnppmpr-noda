@@ -4,7 +4,7 @@ node_modules
 #.dbenv.js
 /settings/db.js
 /uploads/answer
-
+/settings
 
 
 # local env files

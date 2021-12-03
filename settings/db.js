@@ -9,7 +9,7 @@ class DB {
             host: "localhost",
             user: "root",
             password: "1234567890",
-            database: "crm"
+            database: "crm",
 
             // host:env.HOST,
             // socketPath: env.SOCKET,

@@ -1073,7 +1073,7 @@ exports.getExercisesByIomId = async(req, res) => {
         FROM ${tblCollection.subTypeTableIom} as t INNER JOIN tag ON t.tag_id = tag.id_tag  WHERE t.iom_id = "${iomId}" ORDER BY tag.id_tag ASC`
         const [exerciseData] = await req.db.execute(exerciseSql)
         if(!exerciseData.length) {
-            response.status(201, {},res)
+            response.status(201, [],res)
         }else {
             response.status(200,
                 exerciseData,res)

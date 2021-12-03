@@ -35,7 +35,7 @@ exports.signup = async (req, res) => {
             } else if(req.body.code && req.body.code === "7777" && role === 'admin'){
                 roleCheck = "admin"
                 sqlOption = "INSERT INTO `admins`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`gender`,`birthday`,`avatar`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + gender + "','" + birthday + "','" + avatar + "')";
-            } else if(req.body.code && role === 'student') {
+            } else if(!req.body.code && role === 'student') {
                 roleCheck = "student"
                 sqlOption = "INSERT INTO `students`(`user_id`,`name`,`surname`,`patronymic`,`phone`,`discipline_id`,`area_id`,`school_id`,`gender`,`birthday`, `avatar`) VALUES ('" + id_user + "','" + first_name + "' ,'" + surname + "','" + patronymic + "','" + phone + "','" + discipline + "','" + area + "','" + school + "','" + gender + "','" + birthday + "','" + avatar + "')";
             }
