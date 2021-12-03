@@ -84,7 +84,9 @@ module.exports = (app) => {
     const finishedCtrl = require('../Controller/FinishedController')
 
     // get all users from tbl user
-    app.route('/api/users').get(usersCtrl.getAllUsers)
+    // app.route('/api/users').get(usersCtrl.getAllUsers)
+
+    app.route('/api/test').post(usersCtrl.getAllUsers)
 
     //registration
     app.route('/api/auth/signup').post(authCtrl.signup)

@@ -370,6 +370,12 @@ exports.getPendingDataOrFinished = async(req, res) => {
     }
 }
 
+
+/**
+ * ПОЛУЧИТЬ ОТВЕТЫ ЗАДАНИЙ ИЗ ИОМа
+ * ПРОФИЛЬ TUTOR
+ */
+
 exports.getStudentAnswer = async(req, res) => {
 
     try {
@@ -396,6 +402,7 @@ exports.getStudentAnswer = async(req, res) => {
                             report.accepted,
                             report.tutor_comment,
                             report.content as answer_content,
+                            report.file_path,
                             report.link as answer_link
             FROM ${tblCollection.report} as report  
             INNER JOIN ${tblCollection.subTypeTableIom} as t ON report.exercises_id = t.id_exercises 

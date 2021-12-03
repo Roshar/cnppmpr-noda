@@ -231,6 +231,9 @@ exports.getUserData = async(req, res) => {
 
 exports.getAllUsers = async (req, res) => {
 
+    console.log(req.body)
+    console.log('ddfdf')
+
     const sql = 'SELECT * FROM `users`'
     const [rows] = await req.db.execute(sql)
     if(rows){
