@@ -143,6 +143,7 @@ exports.singin = async (req, res) => {
 
     } catch (e) {
         // response.status(401,{message:'Ошибка соединения с БД'},res)
+        console.log(e)
 
         response.status(401,{message: e.message},res)
     }
