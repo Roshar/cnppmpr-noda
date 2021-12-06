@@ -144,11 +144,15 @@ exports.deleteById  = async(req, res) => {
 exports.addInLibrary  = async(req, res) => {
     try {
 
+        console.log(req.body)
         const {category, discipline, title, description,link} = req.body.payload.values
-        const adminId = await userId(req.db,req.body.token)
+        const admin = await userId(req.db,req.body.token)
+        const adminId = admin[0]['user_id']
 
         const insertSql = `INSERT INTO global_library (title, description, link, discipline_id, tag_id,admin_id)
                            VALUES ("${title}", "${description}", "${link}", ${discipline}, "${category}","${adminId}")`
+
+        console.log(insertSql)
 
         const [result] = await req.db.execute(insertSql)
         if(!result.insertId) {

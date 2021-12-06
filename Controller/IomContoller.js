@@ -4,6 +4,7 @@ const uniqid = require('uniqid');
 const DB = require('./../settings/db')
 const tblMethod = require('./../use/tutorTblCollection')
 const userId = require('./../use/getUserId')
+const fs = require ('fs');
 
 // CHECK AND GET
 exports.issetIomId = async(req, res) => {
@@ -27,6 +28,7 @@ exports.issetIomId = async(req, res) => {
         return e
     }
 }
+
 
 /////////////////////////////
 

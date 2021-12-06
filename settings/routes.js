@@ -7,6 +7,7 @@ module.exports = (app) => {
     const fs = require('fs');
     const storage = multer.diskStorage({
         destination: function (req, file, cb) {
+
             console.log('destination')
             console.log(file)
             console.log(req.body)
@@ -22,7 +23,21 @@ module.exports = (app) => {
 
         },
         filename: function (req, file, cb) {
-            cb(null, file.originalname + '.'+file.mimetype.split('/')[1])
+            const MIME_TYPE_MAP = {
+                'image/png': 'png',
+                'image/jpeg': 'jpg',
+                'image/jpg': 'jpg',
+                'application/msword': 'doc',
+                'application/doc': 'doc',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+                'application/vnd.ms-excel': 'xls',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+                'application/vnd.ms-powerpoint': 'ppt',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+            }
+            const date = new Date()
+            // cb(null, file.originalname + '.'+ date.getTime() + file.mimetype.split('/')[1])
+            cb(null, file.originalname + '_'+ date.getTime() + '.'+ MIME_TYPE_MAP[file.mimetype])
         }
     })
     const upload = multer({
@@ -55,11 +70,11 @@ module.exports = (app) => {
             if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png'
                 || file.mimetype === 'application/msword' || file.mimetype === 'application/pdf'
                 || file.mimetype === 'application/doc' || file.mimetype === 'application/docx'
-                || file.mimetype == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                || file.mimetype == 'application/vnd.ms-excel' ||file.mimetype == 'application/vnd.ms-excel'
-                || file.mimetype == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                || file.mimetype == 'application/vnd.ms-powerpoint'
-                || file.mimetype == 'application/vnd.openxmlformats-officedocument.presentationml.presentation'){
+                || file.mimetype == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' //docx
+                || file.mimetype == 'application/vnd.ms-excel' ||file.mimetype == 'application/vnd.ms-excel' //xls
+                || file.mimetype == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' //xlsx
+                || file.mimetype == 'application/vnd.ms-powerpoint' //ppt
+                || file.mimetype == 'application/vnd.openxmlformats-officedocument.presentationml.presentation'){ //pptx
                 return cb(null,true);
             }else {
                 return cb('Error: ONLY PDF DOC IMG formats!');
@@ -138,6 +153,7 @@ module.exports = (app) => {
     app.route('/api/iom/getPendingDataOrFinished').post(iomCtrl.getPendingDataOrFinished)
     app.route('/api/iom/getStatusFinished').post(iomCtrl.getStatusFinished)
     app.route('/api/iom/getStatusToPendingFinish').post(iomCtrl.getStatusToPendingFinish)
+    // app.route('/api/iom/downloadFile').post(iomCtrl.downloadFile)
 
     app.route('/api/iom/addNewIom').post(iomCtrl.addNewIom)
     app.route('/api/iom/issetIomId').post(iomCtrl.issetIomId)

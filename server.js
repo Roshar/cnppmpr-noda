@@ -19,6 +19,7 @@ db.connect().then((dbh) => {
     app.use(express.urlencoded({limit: '50mb',extended:true}))
     app.use(cors())
     app.use(express.static(__dirname + '/uploads/avatar'))
+    app.use(express.static(__dirname + '/uploads/answer'))
     const routes = require('./settings/routes')
     routes(app)
     app.listen(PORT, ()=> {
