@@ -795,6 +795,11 @@ exports.getMyTaskById = async(req, res) => {
         return e
     }
 }
+/**
+ * Получить все комментарии к заданию
+ * комментарии могут быть от всех слушателей, которые имееют такой же ИОМ и задание
+ * ПРОФИЛЬ СТУДЕНТ
+ */
 
 exports.getCommentsByTask = async(req, res) => {
     try {
@@ -815,7 +820,7 @@ exports.getCommentsByTask = async(req, res) => {
                                 FROM question_for_task  as com_tbl
                                 LEFT OUTER JOIN students as s ON com_tbl.sender_id = s.user_id OR com_tbl.recipient_id = s.user_id
                                 LEFT OUTER JOIN tutors as t ON com_tbl.sender_id = t.user_id OR com_tbl.recipient_id = t.user_id
-                                WHERE com_tbl.iom_id = "${iomId}" AND com_tbl.task_id = "${taskId}"`
+                                WHERE com_tbl.iom_id = "${iomId}" AND com_tbl.task_id = "${taskId}" ORDER BY created_at DESC`
 
             let [comments] = await req.db.execute(commentsSql)
             if(!comments.length) {
@@ -834,7 +839,6 @@ exports.getCommentsByTask = async(req, res) => {
         return e
     }
 }
-
 
 
 exports.sendCommentsForTask = async(req, res) => {

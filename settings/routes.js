@@ -188,6 +188,8 @@ module.exports = (app) => {
     app.route('/api/student/getExercisesFromMyIom').post(studentCtrl.getExercisesFromMyIom)
     app.route('/api/student/getMyTaskById').post(studentCtrl.getMyTaskById)
     app.route('/api/student/getCommentsByTask').post(studentCtrl.getCommentsByTask)
+    app.route('/api/tutor/getCommentsByTaskForTutor').post(usersCtrl.getCommentsByTaskForTutor)
+    app.route('/api/tutor/sendCommentsForTaskTutor').post(usersCtrl.sendCommentsForTaskTutor)
     app.route('/api/student/getStatisticByIOM').post(studentCtrl.getStatisticByIOM)
     app.route('/api/student/sendCommentsForTask').post(studentCtrl.sendCommentsForTask)
     app.route('/api/student/insertInReportWithoutFile').post(studentCtrl.insertInReportWithoutFile)

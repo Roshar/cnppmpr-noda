@@ -171,12 +171,15 @@ exports.getDataAdminAccount = async(req, res) => {
     }
 }
 
+/**
+ * Получить все комментарии к заданию
+ * комментарии могут быть от всех слушателей, которые имееют такой же ИОМ и задание
+ * ПРОФИЛЬ ТЬЮТОР
+ */
 
 exports.getCommentsByTaskForTutor = async(req, res) => {
     try {
-        const iomId = req.body.iomId
-        const taskId = req.body.taskId
-        const token = req.body.token
+        const {token, iomId, exId, studentId} = req.body
         const tutor = await userId(req.db,token)
         const tutorId = tutor[0]['user_id'];
 
@@ -186,13 +189,13 @@ exports.getCommentsByTaskForTutor = async(req, res) => {
                             FROM question_for_task  as com_tbl
                             LEFT OUTER JOIN students as s ON com_tbl.sender_id = s.user_id OR com_tbl.recipient_id = s.user_id
                             LEFT OUTER JOIN tutors as t ON com_tbl.sender_id = t.user_id OR com_tbl.recipient_id = t.user_id
-                            WHERE com_tbl.iom_id = "${iomId}" AND com_tbl.task_id = "${taskId}"`
+                            WHERE com_tbl.iom_id = "${iomId}" AND com_tbl.task_id = "${exId}" ORDER BY created_at DESC`
 
         let [comments] = await req.db.execute(commentsSql)
         if(!comments.length) {
             response.status(201, [],res)
         }else {
-            comments[0].studentId = null
+            comments[0].studentId = studentId
             comments[0].tutorId = tutorId
             response.status(200,
                 comments,res)
@@ -203,6 +206,35 @@ exports.getCommentsByTaskForTutor = async(req, res) => {
         return e
     }
 }
+
+/**
+ * Добавить комментарий на задание
+ * комментарии могут быть доступны для всех слушателей, которые имееют такой же ИОМ и задание
+ * ПРОФИЛЬ ТЬЮТОР
+ */
+exports.sendCommentsForTaskTutor = async(req, res) => {
+
+    try {
+        const {token, iomId, exId, studentId, content} = req.body
+        const tutor = await userId(req.db,token)
+        const tutorId = tutor[0]['user_id'];
+
+        const commentSql = `INSERT INTO question_for_task (task_id, iom_id, sender_id, recipient_id, message) VALUES (${exId},"${iomId}","${tutorId}","${studentId}","${content}")`
+        let [comment] = await req.db.execute(commentSql)
+        if(!comment.insertId) {
+            response.status(400, {message: 'Возникла временная ошибка, обратитесь к тьютору'},res)
+        }else {
+            response.status(200,
+                {message: 'Комментарий добавлен'},res)
+            return true
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+
 
 exports.getUserData = async(req, res) => {
     try {
