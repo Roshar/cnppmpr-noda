@@ -35,6 +35,203 @@ exports.getStudentsForTutor = async(req, res) => {
     }
 }
 
+/**
+ * Получить уровни обрзования
+ * ДЛЯ РАЗДЕЛА ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ О СЛУШАТЕЛЕ
+ * Профиль СЛУШАТЕЛЬ
+ */
+
+
+exports.getEducationLevels = async(req, res) => {
+    try {
+
+        let iomSql = `SELECT *  FROM students_additionally_education`
+
+
+
+        const [data] = await req.db.execute(iomSql)
+        if(data.length <= 0) {
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                data,res)
+            return true
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+/**
+ * Получить дополнительную информацию о слушателе
+ * ДЛЯ РАЗДЕЛА ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ О СЛУШАТЕЛЕ
+ * КАТЕГОРИЯ
+ * ОБРАЗОВАНИЕ
+ * ПЕДАГОГИЧЕСКИЙ СТАЖ
+ * ДОЛЖНОСТЬ
+ * Профиль СЛУШАТЕЛЬ
+ */
+
+exports.getStudentAdditionallyOptionById = async(req, res) => {
+    try {
+        const studentId = req.body.studentId
+        let iomSql = `SELECT sad.id,
+                             edu_level.title as edu_level_title, 
+                             sad.education_id as edu_level_id,
+                             categ.title as category_title,
+                             sad.category_id as category_id,
+                             ex.title as experience_title,
+                             sad.edu_experience_id as experience_id,
+                             sad.position_id as position_id,
+                             pos.title as position_title
+                             FROM students_additionally as sad
+                      LEFT OUTER JOIN students_additionally_education as edu_level ON sad.education_id = edu_level.id
+                      LEFT OUTER JOIN students_additionally_categories as categ ON sad.category_id = categ.id
+                      LEFT OUTER JOIN students_additionally_experience as ex ON sad.edu_experience_id = ex.id
+                      LEFT OUTER JOIN students_additionally_positions as pos ON sad.position_id = pos.id
+                      WHERE sad.student_id = "${studentId}"`
+        const [data] = await req.db.execute(iomSql)
+        if(data.length <= 0) {
+            response.status(201, null,res)
+        }else {
+            response.status(200,
+                data,res)
+            return true
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+
+/**
+ * получить профессия
+ * ДЛЯ РАЗДЕЛА ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ О СЛУШАТЕЛЕ
+ * профиль СЛУШАТЕЛЬ
+ */
+
+exports.getPositions = async(req, res) => {
+    try {
+
+        let iomSql = `SELECT *  FROM students_additionally_positions`
+
+        const [data] = await req.db.execute(iomSql)
+
+        if(data.length <= 0) {
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                data,res)
+            return true
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+/**
+ * получить список со стажем
+ * ДЛЯ РАЗДЕЛА ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ О СЛУШАТЕЛЕ
+ * профиль СЛУШАТЕЛЬ
+ */
+
+exports.getExperience = async(req, res) => {
+    try {
+
+        let iomSql = `SELECT *  FROM students_additionally_experience`
+
+        const [data] = await req.db.execute(iomSql)
+
+        if(data.length <= 0) {
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                data,res)
+            return true
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+/**
+ * получить список категорий учителей
+ * ДЛЯ РАЗДЕЛА ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ О СЛУШАТЕЛЕ
+ * профиль СЛУШАТЕЛЬ
+ */
+
+exports.getCategoryTeach = async(req, res) => {
+    try {
+
+        let iomSql = `SELECT *  FROM students_additionally_categories`
+
+        const [data] = await req.db.execute(iomSql)
+
+        if(data.length <= 0) {
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                data,res)
+            return true
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+/**
+ * добавить или изменть дополнительную информацию о слушателе
+ * ДЛЯ РАЗДЕЛА ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ О СЛУШАТЕЛЕ
+ * профиль СЛУШАТЕЛЬ
+ */
+
+exports.insertOrUpdateAdditionally = async(req, res) => {
+
+    try {
+
+        const {studentId, category_id = 0, edu_experience_id = 0, education_id = 0, position_id = 0 } = req.body
+        const issetRowSql = `SELECT id  FROM students_additionally WHERE student_id = "${studentId}"`
+        const [issetRowData] = await req.db.execute(issetRowSql)
+
+        if(issetRowData.length <= 0) {
+            const insertSql = `INSERT INTO students_additionally (student_id, education_id, position_id, edu_experience_id, category_id)
+                                            VALUES ("${studentId}", ${education_id}, ${position_id},${edu_experience_id},
+                                                    ${category_id})`
+            const [insertData] = await req.db.execute(insertSql)
+            if(insertData.insertId) {
+                response.status(200, {message:'Информация добавлена'},res)
+            }else{
+                response.status(201,{message:'Ошибка'} ,res)
+            }
+        }else {
+            const updateSQl = `UPDATE students_additionally 
+                               SET education_id = ${education_id},
+                               position_id = ${position_id},
+                               edu_experience_id = ${edu_experience_id},
+                               category_id = ${category_id} WHERE student_id="${studentId}"`
+            const [updateData] = await req.db.execute(updateSQl)
+            if(updateData.affectedRows) {
+
+                response.status(200, {message:'Изменения сохранены'},res)
+
+            }else{
+                response.status(201,{message:'Ошибка'} ,res)
+            }
+
+        }
+
+    }catch (e) {
+        return e
+    }
+}
+
+
+
 exports.getUsersFromIomEducation = async(req, res) => {
     try {
         const {filter, iomId, token} = req.body
@@ -600,9 +797,7 @@ exports.getMyTaskById = async(req, res) => {
 }
 
 exports.getCommentsByTask = async(req, res) => {
-
     try {
-
         const iomId = req.body.iomId
         const taskId = req.body.taskId
         const token = req.body.token
@@ -616,10 +811,10 @@ exports.getCommentsByTask = async(req, res) => {
 
             let commentsSql = `SELECT com_tbl.sender_id, com_tbl.recipient_id, com_tbl.message, com_tbl.like,
                                       DATE_FORMAT(com_tbl.created_at, '%d-%m-%Y %H:%i:%s') as created_date,
-                                      s.name, s.surname, s.avatar, t.avatar as tutor_avatar 
+                                      s.name, s.surname, s.avatar, t.avatar as tutor_avatar
                                 FROM question_for_task  as com_tbl
-                                LEFT OUTER JOIN students as s ON com_tbl.sender_id = s.user_id OR com_tbl.recipient_id = s.user_id 
-                                LEFT OUTER JOIN tutors as t ON com_tbl.sender_id = t.user_id OR com_tbl.recipient_id = t.user_id 
+                                LEFT OUTER JOIN students as s ON com_tbl.sender_id = s.user_id OR com_tbl.recipient_id = s.user_id
+                                LEFT OUTER JOIN tutors as t ON com_tbl.sender_id = t.user_id OR com_tbl.recipient_id = t.user_id
                                 WHERE com_tbl.iom_id = "${iomId}" AND com_tbl.task_id = "${taskId}"`
 
             let [comments] = await req.db.execute(commentsSql)
@@ -639,6 +834,8 @@ exports.getCommentsByTask = async(req, res) => {
         return e
     }
 }
+
+
 
 exports.sendCommentsForTask = async(req, res) => {
 

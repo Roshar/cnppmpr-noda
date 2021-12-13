@@ -116,12 +116,12 @@ exports.addNewIom = async(req, res) => {
 }
 exports.addExercise = async(req, res) => {
     try {
-        let {title, description = '', link = '', mentor=0, tag, term } = req.body.values
+        let {title, description = '', link = '', mentor=0, tag, term, level } = req.body.values
         term = term ? term : '1000-01-01'
         const tblName = req.body.tbl
         const iom_id = req.body.values.iomId
 
-        const sql = `INSERT INTO ${tblName} (iom_id, title, description, link, mentor, term, tag_id) VALUES ("${iom_id}","${title}","${description}","${link}",${mentor},"${term}","${tag}")`
+        const sql = `INSERT INTO ${tblName} (iom_id, title, description, link, mentor, term, tag_id, iom_level_id) VALUES ("${iom_id}","${title}","${description}","${link}",${mentor},"${term}","${tag}",${level})`
         let [result] = await req.db.execute(sql)
         if(!result.insertId) {
             response.status(400, {message:"Ошибка при добавлении элемента"},res)
@@ -134,6 +134,7 @@ exports.addExercise = async(req, res) => {
 }
 exports.addExerciseFromLib = async(req, res) => {
     try {
+
         const idU = await userId(req.db,req.body.token)
         const id = req.body.values.id
         const iomId = req.body.values.iomId
@@ -149,8 +150,8 @@ exports.addExerciseFromLib = async(req, res) => {
         }else {
             response.status(400, {message:"Ошибка при добавлении элемента"},res)
         }
-        const insertLibDataInIom = `INSERT INTO ${tblCollection.subTypeTableIom} (iom_id, title, description, link, mentor, term, tag_id)
-                                    VALUES ("${iomId}","${libData[0].title}","${libData[0].description}","${libData[0].link}",${libData[0].mentor},"${libData[0].term}","${libData[0]['tag_id']}")`
+        const insertLibDataInIom = `INSERT INTO ${tblCollection.subTypeTableIom} (iom_id, title, description, link, mentor, term, tag_id, iom_level_id)
+                                    VALUES ("${iomId}","${libData[0].title}","${libData[0].description}","${libData[0].link}",${libData[0].mentor},"${libData[0].term}","${libData[0]['tag_id']}",${libData[0]['iom_level_id']})`
         const [result] = await req.db.execute(insertLibDataInIom)
 
         if(!result.insertId) {
@@ -172,6 +173,7 @@ exports.addExerciseFromLibGlobal = async(req, res) => {
         const tblCollection = tblMethod.tbleCollection(idU[0]['user_id'])
         const getFromLibGlobalByIdSql = `SELECT * FROM global_library WHERE id = ${id}`
         const [libData] = await req.db.execute(getFromLibGlobalByIdSql)
+        console.log(libData)
 
         if(libData.length){
             libData[0].iomId = iomId
@@ -180,8 +182,10 @@ exports.addExerciseFromLibGlobal = async(req, res) => {
         }else {
             response.status(400, {message:"Ошибка при добавлении элемента"},res)
         }
-        const insertLibDataInIom = `INSERT INTO ${tblCollection.subTypeTableIom} (iom_id, title, description, link, mentor, term, tag_id)
-                                    VALUES ("${iomId}","${libData[0].title}","${libData[0].description}","${libData[0].link}",${libData[0].mentor},"${libData[0].term}","${libData[0]['tag_id']}")`
+        const insertLibDataInIom = `INSERT INTO ${tblCollection.subTypeTableIom} (iom_id, title, description, link, mentor, term, tag_id, iom_level_id)
+                                    VALUES ("${iomId}","${libData[0].title}","${libData[0].description}","${libData[0].link}",${libData[0].mentor},"${libData[0].term}",
+                                    ${libData[0]['tag_id']},
+                                    ${libData[0]['iom_level_id']})`
         const [result] = await req.db.execute(insertLibDataInIom)
 
 
@@ -212,8 +216,13 @@ exports.getExercises = async(req, res) => {
                             tag.id_tag,
                             tag.title_tag,
                             DATE_FORMAT(t.term, '%d.%m.%Y') as term,
-                            t.tag_id
-        FROM ${tblCollection.subTypeTableIom} as t INNER JOIN tag ON t.tag_id = tag.id_tag  WHERE t.iom_id = "${req.body.payload.id}" ORDER BY tag.id_tag ASC`
+                            t.tag_id,
+                            level.title as level_title, 
+                            level.id as level_id 
+        FROM ${tblCollection.subTypeTableIom} as t 
+        INNER JOIN tag ON t.tag_id = tag.id_tag
+        INNER JOIN global_iom_levels as level ON t.iom_level_id = level.id  
+        WHERE t.iom_id = "${req.body.payload.id}" ORDER BY tag.id_tag ASC`
         const [exerciseData] = await req.db.execute(exerciseSql)
         if(!exerciseData.length) {
             response.status(201, {},res)
@@ -490,8 +499,12 @@ exports.getTask = async(req, res) => {
                             t.mentor,
                             tag.id_tag,
                             tag.title_tag,
+                            level.title as level_title, level.id as level_id,
                             DATE_FORMAT(t.term, '%d.%m.%Y') as term,
-                            t.tag_id FROM ${tbl} as t INNER JOIN tag ON t.tag_id = tag.id_tag WHERE t.iom_id = "${iomId}" AND t.id_exercises = "${taskId}"`
+                            t.tag_id FROM ${tbl} as t 
+                            INNER JOIN tag ON t.tag_id = tag.id_tag 
+                            INNER JOIN global_iom_levels as level ON t.iom_level_id = level.id
+                            WHERE t.iom_id = "${iomId}" AND t.id_exercises = "${taskId}"`
         const [taskData] = await req.db.execute(taskSql)
 
         if(!taskData.length) {
@@ -510,12 +523,12 @@ exports.getTask = async(req, res) => {
 exports.updateExercise = async(req, res) => {
     try {
 
-        const {id_exercise, title, description = '', link = '', mentor = 0, tag} = req.body.values
+        const {id_exercise, title, description = '', link = '', mentor = 0, tag, level} = req.body.values
         const term = req.body.values.term ? req.body.values.term : '1000-01-01'
         const tblName = req.body.tbl
         const iom_id = req.body.values.iomId
 
-        const sql = `UPDATE  ${tblName} SET title ="${title}" , description = "${description}", link="${link}", mentor=${mentor}, term="${term}", tag_id=${tag} WHERE iom_id="${iom_id}" AND id_exercises = ${id_exercise}`
+        const sql = `UPDATE  ${tblName} SET title ="${title}" , description = "${description}", link="${link}", mentor=${mentor}, term="${term}", tag_id=${tag}, iom_level_id=${level} WHERE iom_id="${iom_id}" AND id_exercises = ${id_exercise}`
         const [result] = await req.db.execute(sql)
 
         if(!result.affectedRows) {

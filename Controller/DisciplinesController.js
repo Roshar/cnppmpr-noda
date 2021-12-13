@@ -18,3 +18,19 @@ exports.getDisciplines = async(req, res) => {
     }
 }
 
+exports.getLevels = async(req, res) => {
+    try {
+        const sql = "SELECT * FROM global_iom_levels"
+        const [levels] = await req.db.execute(sql)
+        if(levels.length <= 0) {
+            response.status(401, {message:"пусто"}, res)
+        }else {
+            response.status(200,
+                levels,res)
+            return true
+        }
+    }catch (e) {
+        return e
+    }
+}
+

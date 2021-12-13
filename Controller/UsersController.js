@@ -158,7 +158,6 @@ exports.getDataAdminAccount = async(req, res) => {
                          INNER JOIN users as u ON a.user_id = u.id_user 
                          WHERE a.user_id = "${adminId}"`
 
-
         const [result] = await req.db.execute(sql)
 
         if(result.length <= 0) {
@@ -172,6 +171,38 @@ exports.getDataAdminAccount = async(req, res) => {
     }
 }
 
+
+exports.getCommentsByTaskForTutor = async(req, res) => {
+    try {
+        const iomId = req.body.iomId
+        const taskId = req.body.taskId
+        const token = req.body.token
+        const tutor = await userId(req.db,token)
+        const tutorId = tutor[0]['user_id'];
+
+        let commentsSql = `SELECT com_tbl.sender_id, com_tbl.recipient_id, com_tbl.message, com_tbl.like,
+                                  DATE_FORMAT(com_tbl.created_at, '%d-%m-%Y %H:%i:%s') as created_date,
+                                  s.name, s.surname, s.avatar, t.avatar as tutor_avatar
+                            FROM question_for_task  as com_tbl
+                            LEFT OUTER JOIN students as s ON com_tbl.sender_id = s.user_id OR com_tbl.recipient_id = s.user_id
+                            LEFT OUTER JOIN tutors as t ON com_tbl.sender_id = t.user_id OR com_tbl.recipient_id = t.user_id
+                            WHERE com_tbl.iom_id = "${iomId}" AND com_tbl.task_id = "${taskId}"`
+
+        let [comments] = await req.db.execute(commentsSql)
+        if(!comments.length) {
+            response.status(201, [],res)
+        }else {
+            comments[0].studentId = null
+            comments[0].tutorId = tutorId
+            response.status(200,
+                comments,res)
+            return true
+        }
+
+    }catch (e) {
+        return e
+    }
+}
 
 exports.getUserData = async(req, res) => {
     try {
@@ -192,7 +223,7 @@ exports.getUserData = async(req, res) => {
                         INNER JOIN discipline ON students.discipline_id = discipline.id_dis 
                         INNER JOIN users as u ON students.user_id = u.id_user 
                         WHERE students.user_id = "${userData[0]['user_id']}"`,
-                `SELECT tutors.user_id, tutors.name, tutors.surname, tutors.patronymic, tutors.phone 
+                `SELECT tutors.user_id, tutors.name, tutors.surname, tutors.patronymic, tutors.phone, tutors.avatar 
                         FROM relationship_tutor_student as rt 
                         INNER JOIN tutors ON tutors.user_id = rt.t_user_id 
                         WHERE rt.s_user_id = "${userData[0]['user_id']}"`
@@ -231,8 +262,6 @@ exports.getUserData = async(req, res) => {
 
 exports.getAllUsers = async (req, res) => {
 
-    console.log(req.body)
-    console.log('ddfdf')
 
     const sql = 'SELECT * FROM `users`'
     const [rows] = await req.db.execute(sql)

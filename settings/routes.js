@@ -118,6 +118,9 @@ module.exports = (app) => {
     // get disciplines
     app.route('/api/get/discipines').post(disciplinesCtrl.getDisciplines)
 
+    // get levels
+    app.route('/api/get/levels').post(disciplinesCtrl.getLevels)
+
     //get role
     app.route('/api/get/role').post(authCtrl.getRole)
 
@@ -164,6 +167,12 @@ module.exports = (app) => {
     //STUDENTS | TUTOR
 
     app.route('/api/student/getStudentsForTutor').post(studentCtrl.getStudentsForTutor)
+    app.route('/api/student/getEducationLevels').post(studentCtrl.getEducationLevels)
+    app.route('/api/student/getPositions').post(studentCtrl.getPositions)
+    app.route('/api/student/getExperience').post(studentCtrl.getExperience)
+    app.route('/api/student/getCategoryTeach').post(studentCtrl.getCategoryTeach)
+    app.route('/api/student/insertOrUpdateAdditionally').post(studentCtrl.insertOrUpdateAdditionally)
+    app.route('/api/student/getStudentAdditionallyOptionById').post(studentCtrl.getStudentAdditionallyOptionById)
     app.route('/api/student/getUsersFromIomFreeForEducation').post(studentCtrl.getUsersFromIomFreeForEducation)
     app.route('/api/student/addStudentInCurrentIom').post(studentCtrl.addStudentInCurrentIom)
     app.route('/api/student/deleteStudentFromIomEducation').post(studentCtrl.deleteStudentFromIomEducation)

@@ -8,9 +8,11 @@ exports.getData  = async(req, res) => {
 
         const sql = `SELECT l.id, l.title, l.description, l.link,
                      l.discipline_id, DATE_FORMAT(l.created_date, '%d.%m.%Y') as created_date,
-                     l.tag_id, d.title_discipline, t.title_tag FROM global_library as l
+                     l.tag_id, d.title_discipline, t.title_tag, level.title as level_title, level.id as level_id FROM global_library as l
                      INNER JOIN discipline as d  ON l.discipline_id = d.id_dis
-                     INNER JOIN tag as t ON l.tag_id = t.id_tag`
+                     INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id
+                     INNER JOIN tag as t ON l.tag_id = t.id_tag
+                     `
 
         const [sqlData] = await req.db.execute(sql)
 
@@ -64,8 +66,10 @@ exports.getDataById  = async(req, res) => {
         const itemId = req.body.id
         const sql = `SELECT l.id, l.title, l.description, l.link,
                      l.discipline_id, DATE_FORMAT(l.created_date, '%d.%m.%Y') as created_date,
-                     l.tag_id, d.title_discipline, t.title_tag FROM global_library as l
+                     l.tag_id, d.title_discipline, t.title_tag, level.title as level_title, level.id as level_id 
+                     FROM global_library as l
                      INNER JOIN discipline as d  ON l.discipline_id = d.id_dis
+                     INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id
                      INNER JOIN tag as t ON l.tag_id = t.id_tag WHERE l.id = ${itemId}`
 
         const [sqlData] =  await req.db.execute(sql)
@@ -86,28 +90,71 @@ exports.getDataWithFilter  = async(req, res) => {
     try {
         const dis = parseInt(req.body.disId)
         const tag = parseInt(req.body.tagId)
+        const level = parseInt(req.body.level)
         let sql
-        if(dis && tag ) {
+        if(dis && tag && level) {
             sql = `SELECT l.id, l.title, l.description, l.link,
                      l.discipline_id, DATE_FORMAT(l.created_date, '%d.%m.%Y') as created_date,
-                     l.tag_id, d.title_discipline, t.title_tag FROM global_library as l
+                     l.tag_id, d.title_discipline, t.title_tag, level.title as level_title, level.id as level_id 
+                     FROM global_library as l
                      INNER JOIN discipline as d  ON l.discipline_id = d.id_dis
+                     INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id
                      INNER JOIN tag as t ON l.tag_id = t.id_tag
-                     WHERE l.discipline_id = ${dis} AND l.tag_id = ${tag}`
-        }else if(dis) {
+                     WHERE l.discipline_id = ${dis} AND l.tag_id = ${tag} AND l.iom_level_id = ${level}`
+        }else if(dis && !tag && !level) {
             sql = `SELECT l.id, l.title, l.description, l.link,
                      l.discipline_id, DATE_FORMAT(l.created_date, '%d.%m.%Y') as created_date,
-                     l.tag_id, d.title_discipline, t.title_tag FROM global_library as l
+                     l.tag_id, d.title_discipline, t.title_tag, level.title as level_title, level.id as level_id 
+                     FROM global_library as l
                      INNER JOIN discipline as d  ON l.discipline_id = d.id_dis
+                     INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id
                      INNER JOIN tag as t ON l.tag_id = t.id_tag
                      WHERE l.discipline_id = ${dis}`
-        }else if(tag) {
+        }else if(tag && !dis && !level) {
             sql = `SELECT l.id, l.title, l.description, l.link,
                      l.discipline_id, DATE_FORMAT(l.created_date, '%d.%m.%Y') as created_date,
-                     l.tag_id, d.title_discipline, t.title_tag FROM global_library as l
+                     l.tag_id, d.title_discipline, t.title_tag, level.title as level_title, level.id as level_id 
+                     FROM global_library as l
                      INNER JOIN discipline as d  ON l.discipline_id = d.id_dis
+                     INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id
                      INNER JOIN tag as t ON l.tag_id = t.id_tag
                      WHERE l.tag_id = ${tag}`
+        } else if(level && !tag && !dis) {
+            sql = `SELECT l.id, l.title, l.description, l.link,
+                     l.discipline_id, DATE_FORMAT(l.created_date, '%d.%m.%Y') as created_date,
+                     l.tag_id, d.title_discipline, t.title_tag, level.title as level_title, level.id as level_id 
+                     FROM global_library as l
+                     INNER JOIN discipline as d  ON l.discipline_id = d.id_dis
+                     INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id
+                     INNER JOIN tag as t ON l.tag_id = t.id_tag
+                     WHERE l.iom_level_id = ${level}`
+        }else if(level && tag && !dis) {
+            sql = `SELECT l.id, l.title, l.description, l.link,
+                     l.discipline_id, DATE_FORMAT(l.created_date, '%d.%m.%Y') as created_date,
+                     l.tag_id, d.title_discipline, t.title_tag, level.title as level_title, level.id as level_id 
+                     FROM global_library as l
+                     INNER JOIN discipline as d  ON l.discipline_id = d.id_dis
+                     INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id
+                     INNER JOIN tag as t ON l.tag_id = t.id_tag
+                     WHERE  l.tag_id = ${tag} AND l.iom_level_id = ${level}`
+        }else if(level && dis && !tag) {
+            sql = `SELECT l.id, l.title, l.description, l.link,
+                     l.discipline_id, DATE_FORMAT(l.created_date, '%d.%m.%Y') as created_date,
+                     l.tag_id, d.title_discipline, t.title_tag, level.title as level_title, level.id as level_id 
+                     FROM global_library as l
+                     INNER JOIN discipline as d  ON l.discipline_id = d.id_dis
+                     INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id
+                     INNER JOIN tag as t ON l.tag_id = t.id_tag
+                     WHERE l.discipline_id = ${dis} AND l.iom_level_id = ${level}`
+        }else if(!level && dis && tag) {
+            sql = `SELECT l.id, l.title, l.description, l.link,
+                     l.discipline_id, DATE_FORMAT(l.created_date, '%d.%m.%Y') as created_date,
+                     l.tag_id, d.title_discipline, t.title_tag, level.title as level_title, level.id as level_id 
+                     FROM global_library as l
+                     INNER JOIN discipline as d  ON l.discipline_id = d.id_dis
+                     INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id
+                     INNER JOIN tag as t ON l.tag_id = t.id_tag
+                     WHERE l.discipline_id = ${dis} AND l.tag_id = ${tag}`
         }
 
         const [sqlData] = await req.db.execute(sql)
@@ -144,15 +191,13 @@ exports.deleteById  = async(req, res) => {
 exports.addInLibrary  = async(req, res) => {
     try {
 
-        console.log(req.body)
-        const {category, discipline, title, description,link} = req.body.payload.values
+        const {category, discipline, title, description,link, level_iom} = req.body.payload.values
         const admin = await userId(req.db,req.body.token)
         const adminId = admin[0]['user_id']
 
-        const insertSql = `INSERT INTO global_library (title, description, link, discipline_id, tag_id,admin_id)
-                           VALUES ("${title}", "${description}", "${link}", ${discipline}, "${category}","${adminId}")`
+        const insertSql = `INSERT INTO global_library (title, description, link, discipline_id, tag_id, iom_level_id, admin_id)
+                           VALUES ("${title}", "${description}", "${link}", ${discipline}, "${category}",${level_iom},"${adminId}")`
 
-        console.log(insertSql)
 
         const [result] = await req.db.execute(insertSql)
         if(!result.insertId) {
@@ -167,9 +212,9 @@ exports.addInLibrary  = async(req, res) => {
 
 exports.updateInLibrary  = async(req, res) => {
     try {
-        const {category, discipline, title, description='',link='', id} = req.body.payload
+        const {category, discipline, title, level, description='',link='', id} = req.body.payload
         const sql = `UPDATE global_library  SET title ="${title}" , description = "${description}", link="${link}", 
-                        discipline_id=${discipline}, tag_id="${category}" WHERE id = ${id} `
+                        discipline_id=${discipline}, tag_id=${category}, iom_level_id =${level} WHERE id = ${id} `
         const [result] = await req.db.execute(sql)
         if(!result.affectedRows) {
             response.status(201, {message:'Ошибка при изменении. Обратитесь к разработчикам'},res)
