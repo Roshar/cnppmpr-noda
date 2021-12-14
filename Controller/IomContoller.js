@@ -390,6 +390,7 @@ exports.getPendingDataOrFinished = async(req, res) => {
 exports.getStudentAnswer = async(req, res) => {
 
     try {
+
         const {token, iomId, exId, studentId} = req.body
         const id = await userId(req.db,token)
         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
@@ -423,6 +424,7 @@ exports.getStudentAnswer = async(req, res) => {
             WHERE report.student_id = "${studentId}" AND report.iom_id = "${iomId}" AND report.exercises_id = ${exId}`
 
         const [taskData] = await req.db.execute(sql)
+        console.log(taskData)
 
         if(!taskData.length) {
             response.status(201, {},res)

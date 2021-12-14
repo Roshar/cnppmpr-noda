@@ -11,7 +11,6 @@ class DB {
             password: "1234567890",
             database: "crm",
 
-            //
             // host:env.HOST,
             // socketPath: env.SOCKET,
             // port: env.PORT,

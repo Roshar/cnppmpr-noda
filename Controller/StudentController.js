@@ -873,10 +873,11 @@ exports.sendCommentsForTask = async(req, res) => {
 
 exports.insertInReportWithoutFile = async(req, res) => {
     try {
+
         const iomId = req.body.iomId
         const taskId = req.body.taskId
         const token = req.body.token
-        const link = req.body.link.trim()
+        const link = req.body.link ? req.body.link.trim() : ''
         // const content = req.body.content.trim().replace(/<[^>]*>?/gm, '');
         const content = req.body.content.trim();
         const category = req.body.category
@@ -968,7 +969,7 @@ exports.updateInReportWithoutFile = async(req, res) => {
         const taskId = req.body.taskId
         const reportId = req.body.reportId
         const token = req.body.token
-        const link = req.body.link.trim()
+        const link = req.body.link.trim() || ''
         // const content = req.body.content.trim().replace(/<[^>]*>?/gm, '');
         const content = req.body.content.trim();
 
@@ -1008,7 +1009,7 @@ exports.updateInReportWithFile = async(req, res) => {
         const taskId = req.body.taskId
         const reportId = req.body.reportId
         const token = req.body.token
-        const link = req.body.link.trim()
+        const link = req.body.link.trim() || ''
         const content = req.body.content.trim();
 
         const id = await userId(req.db,token)
