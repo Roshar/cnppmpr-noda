@@ -70,6 +70,8 @@ exports.getEducationLevels = async(req, res) => {
  * ОБРАЗОВАНИЕ
  * ПЕДАГОГИЧЕСКИЙ СТАЖ
  * ДОЛЖНОСТЬ
+ * РЕЗУЛЬТАТЫ ПРОФ ДИАГНОСТИК
+ * ИНДИВИДУАЛЬНЫЙ ЗАПРОС
  * Профиль СЛУШАТЕЛЬ
  */
 
@@ -84,7 +86,9 @@ exports.getStudentAdditionallyOptionById = async(req, res) => {
                              ex.title as experience_title,
                              sad.edu_experience_id as experience_id,
                              sad.position_id as position_id,
-                             pos.title as position_title
+                             pos.title as position_title,
+                             sad.prof_result as profresult_title,
+                             sad.individual_request as individual_request_title
                              FROM students_additionally as sad
                       LEFT OUTER JOIN students_additionally_education as edu_level ON sad.education_id = edu_level.id
                       LEFT OUTER JOIN students_additionally_categories as categ ON sad.category_id = categ.id
@@ -194,14 +198,21 @@ exports.insertOrUpdateAdditionally = async(req, res) => {
 
     try {
 
-        const {studentId, category_id = 0, edu_experience_id = 0, education_id = 0, position_id = 0 } = req.body
+        const {studentId,
+            category_id = 0,
+            edu_experience_id = 0,
+            education_id = 0,
+            position_id = 0,
+            prof_result = '',
+            individual_request = ''} = req.body
         const issetRowSql = `SELECT id  FROM students_additionally WHERE student_id = "${studentId}"`
         const [issetRowData] = await req.db.execute(issetRowSql)
 
         if(issetRowData.length <= 0) {
-            const insertSql = `INSERT INTO students_additionally (student_id, education_id, position_id, edu_experience_id, category_id)
+            const insertSql = `INSERT INTO students_additionally (student_id, education_id, position_id, edu_experience_id, 
+                                                                  category_id,prof_result, individual_request)
                                             VALUES ("${studentId}", ${education_id}, ${position_id},${edu_experience_id},
-                                                    ${category_id})`
+                                                    ${category_id},"${prof_result}", "${individual_request}")`
             const [insertData] = await req.db.execute(insertSql)
             if(insertData.insertId) {
                 response.status(200, {message:'Информация добавлена'},res)
@@ -213,7 +224,10 @@ exports.insertOrUpdateAdditionally = async(req, res) => {
                                SET education_id = ${education_id},
                                position_id = ${position_id},
                                edu_experience_id = ${edu_experience_id},
-                               category_id = ${category_id} WHERE student_id="${studentId}"`
+                               category_id = ${category_id},
+                               prof_result = "${prof_result}",
+                               individual_request = "${individual_request}"
+                               WHERE student_id="${studentId}"`
             const [updateData] = await req.db.execute(updateSQl)
             if(updateData.affectedRows) {
 

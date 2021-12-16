@@ -5,7 +5,7 @@ module.exports = {
     PORT: 8899,
     DB_USER: 'root',
     DB_PASSWORD: 'root',
-    DB_NAME: 'crm_d',
+    DB_NAME: 'crm_2',
     jwt: 'bearer'
 }
 

@@ -9,6 +9,8 @@ const tblMethod = require('./../use/tutorTblCollection')
  * проверка количества заданий в [id_tutor]_subTypeTableIom
  * проверка количества пройденных заданий слушателем в [id_tutor]_report
  * при условии что совпадают значения меняем статус в relationship_student_iom на выполненный
+ * добавляем  в таблицу global_history_education_rows данные (таблица в которой будут хранится записи завершивших обучение)
+ * добавляем в global_recall отзыв и оценку
  * ДЛЯ СЛУШАТЕЛЯ
  */
 
@@ -27,8 +29,12 @@ exports.studentEducation = async(req,res) => {
                                                       SET status = 1, date_finished_education = CURRENT_TIMESTAMP WHERE user_id = "${studentId}" 
                                                       AND tutor_id = "${tutorId}" AND iom_id = "${iomId}"`
 
+
         const recallSql = `INSERT INTO global_recall (student_id, tutor_id,iom_id, mark, comment)
                            VALUES ("${studentId}","${tutorId}","${iomId}", ${mark}, "${recall}" )`
+
+        const addInHistoryTblSql = `INSERT INTO global_history_education_rows (tutor_id, student_id,iom_id)
+                           VALUES ("${tutorId}","${studentId}","${iomId}")`
 
         let [getCountReportsByIOM] = await req.db.execute(getCountReportsByIOMSQL)
 
@@ -38,8 +44,9 @@ exports.studentEducation = async(req,res) => {
             response.status(201, {message: 'Возникла ошибка при выполнении операции. Обратитесь к тьютору'},res)
         }else if(getCountExercisesByIOM.length === getCountReportsByIOM.length ) {
             let [addStatusOfFinishedEducation] = await req.db.execute(addStatusOfFinishedEducationSQL)
+            let [history] = await req.db.execute(addInHistoryTblSql)
             let [recall] = await req.db.execute(recallSql)
-            if(addStatusOfFinishedEducation.affectedRows && recall.insertId) {
+            if(addStatusOfFinishedEducation.affectedRows && recall.insertId && history.insertId) {
                 response.status(200, {message:'Поздравляем Вас с успешным окончанием обучения!'},res)
             }else {
                 response.status(201, {message:'Возникла ошибка при выполнении операции. Обратитесь к тьютору'},res)
@@ -52,7 +59,6 @@ exports.studentEducation = async(req,res) => {
 
     }
 }
-
 
 /**
  * Проверка на завершенность ИОМа
@@ -110,7 +116,6 @@ exports.getFinishedCourses = async(req,res) => {
 
     }
 }
-
 
 /**
  * Получить всех слушателей завершивших обучение
