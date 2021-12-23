@@ -1006,7 +1006,10 @@ exports.getGroupById =  async(req,res) => {
     }
 }
 
-
+/**
+ *  Выборка слушателей которые добавлены к тьютору (в группу тьютора)
+ *  с выявлением тех, кто заврешил обучение
+ */
 exports.getAppointedStudentsCurrentGroup = async(req, res) => {
     try {
         const tutorId = req.body.tutorId
@@ -1019,6 +1022,7 @@ exports.getAppointedStudentsCurrentGroup = async(req, res) => {
         INNER JOIN schools as sch ON s.school_id = sch.id_school
         WHERE rts.t_user_id = "${tutorId}"`
         const [sqlData] = await req.db.execute(sql)
+        console.log(sqlData)
 
         if(!sqlData.length) {
             response.status(201, [],res)
@@ -1147,6 +1151,9 @@ exports.getStatusToPendingFinish = async(req, res) => {
         return e
     }
 }
+/**
+ * Выборка слушателей по id (дисциплина) для зачисления в группу тьютора
+ */
 
 exports.getFreeStudentsByDisciplineId = async(req, res) => {
     try {

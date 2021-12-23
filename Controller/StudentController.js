@@ -47,8 +47,6 @@ exports.getEducationLevels = async(req, res) => {
 
         let iomSql = `SELECT *  FROM students_additionally_education`
 
-
-
         const [data] = await req.db.execute(iomSql)
         if(data.length <= 0) {
             response.status(201, [],res)

@@ -201,6 +201,7 @@ module.exports = (app) => {
     app.route('/api/finished/checkStudentIOM').post(finishedCtrl.checkStudentIOM)
     app.route('/api/finished/getFinishedCourses').post(finishedCtrl.getFinishedCourses)
     app.route('/api/finished/getStudentsForTutor').post(finishedCtrl.getStudentsForTutor)
+    app.route('/api/finished/generationReportByStudentEducation').post(finishedCtrl.generationReportByStudentEducation)
 
 
 

@@ -37,7 +37,6 @@ exports.getTutorData = async(req, res) => {
 
 exports.deleteTutor = async(req, res) => {
 
-    console.log(req.body)
 
     const code = req.body.code
     const tutorId = req.body.tutorId

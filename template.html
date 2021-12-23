@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Отчет итоговый</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+</head>
+<body>
+<h3>Индивидуальный образовательный маршрут: {{iom.title}}</h3>
+
+<table class="table"  style="width: 297mm">
+    <thead>
+    <tr>
+        <th scope="col"  style="text-align: center;" colspan="2"> <strong>1. Общие сведения о педагоге:</strong></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td style="width: 15%">ФИО педагога:</td>
+        <td style="width: 35%">{{student.surname}} {{student.name}} {{student.patronymic}}</td>
+    </tr>
+    <tr>
+        <td style="width: 15%">Место работы:</td>
+        <td style="width: 25%">{{student.school_name}}</td>
+    </tr>
+    <tr>
+        <td style="width: 15%">Район:</td>
+        <td style="width: 25%">{{student.title_area}}</td>
+    </tr>
+    <tr>
+        <td style="width: 15%">Образование:</td>
+        <td style="width: 25%"> {{addInfo.edu_level_title}}</td>
+    </tr>
+    <tr>
+        <td style="width: 15%">Категория:</td>
+        <td style="width: 25%"> {{addInfo.category_title}}</td>
+    </tr>
+    <tr>
+        <td style="width: 15%">Предмет:</td>
+        <td style="width: 25%">{{student.title_discipline}}</td>
+    </tr>
+    <tr>
+        <td style="width: 15%">Педагогический стаж:</td>
+        <td style="width: 25%"> {{addInfo.experience_title}}</td>
+    </tr>
+    <tr>
+        <td style="width: 15%">Информация о тьюторе/наставнике: </td>
+        <td style="width: 25%"> {{tutor.surname}} {{tutor.name}} {{tutor.patronymic}}</td>
+    </tr>
+    <tr>
+        <td scope="col"  style="text-align: center;" colspan="2"> <strong>2. Результаты диагностики профессиональных дефицитов </strong></td>
+    </tr>
+    <tr>
+        <td style="width: 15%">Формы/результаты проведенных профессиональных диагностик:  </td>
+        <td style="width: 25%"> {{addInfo.profresult_title}}</td>
+    </tr>
+    <tr>
+        <td scope="col"  style="text-align: center;" colspan="2"> <strong>3. Индивидуальный запрос педагога </strong></td>
+    </tr>
+    <tr>
+        <td> {{addInfo.individual_request_title}}</td>
+    </tr>
+    </tbody>
+</table>
+<h4>4.Карта профессионального развития</h4>
+<table class="table"  style="width: 297mm">
+    <thead>
+        <tr>
+            <th scope="col">Уровни реализации ИОМ</th>
+            <th scope="col">Сопровождение (наставник/тьютор)</th>
+            <th scope="col">Мероприятия, направленные на устранение выявленных дефицитов</th>
+            <th scope="col">Категория</th>
+            <th scope="col">Сроки реализации</th>
+        </tr>
+    </thead>
+    <tbody>
+    {{#each exercises}}
+        <tr>
+            <td> {{this.level_title}}</td>
+            <td>{{#if this.mentor}}
+                Наставник
+                {{else}}
+                Тьютор
+                {{/if}}</td>
+            <td> {{this.title}}</td>
+            <td> {{this.title_tag}}</td>
+            <td> {{this.term}}</td>
+        </tr>
+    {{/each}}
+    </tbody>
+</table>
+
+<h4>5.Отчет слушателя о проделанной работе по карте профессионального развития</h4>
+<table class="table"  style="width: 297mm">
+    <thead>
+    <tr>
+        <th scope="col">Уровни реализации ИОМ</th>
+        <th scope="col">Сопровождение (наставник/тьютор)</th>
+        <th scope="col">Мероприятия, направленные на устранение выявленных дефицитов</th>
+        <th scope="col">Категория</th>
+        <th scope="col">Отчет</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#each exercises}}
+    <tr>
+        <td> {{this.level_title}}</td>
+        <td>{{#if this.mentor}}
+            Наставник
+            {{else}}
+            Тьютор
+            {{/if}}</td>
+        <td> {{this.title}}</td>
+        <td> {{this.title_tag}}</td>
+        <td> </td>
+    </tr>
+    {{/each}}
+    </tbody>
+</table>
+
+</body>
+
+</html>

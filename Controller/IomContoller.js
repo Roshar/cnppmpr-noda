@@ -424,7 +424,6 @@ exports.getStudentAnswer = async(req, res) => {
             WHERE report.student_id = "${studentId}" AND report.iom_id = "${iomId}" AND report.exercises_id = ${exId}`
 
         const [taskData] = await req.db.execute(sql)
-        console.log(taskData)
 
         if(!taskData.length) {
             response.status(201, {},res)
@@ -438,21 +437,56 @@ exports.getStudentAnswer = async(req, res) => {
     }
 }
 
+/**
+ * обновить статус "на проверке" на "завершен" в  (локальной) таблице report
+ *  добавить данные заврешенного задания в глобальную таблицу global_history_reports для сохранности первоначального вида
+ *  у выполненного задания, на случай если тьютор в дальнейшем поменяет содержимое ИОМа
+ */
 exports.successTask = async(req, res) => {
     try {
         const {token, iomId, exId, studentId} = req.body
         const id = await userId(req.db,token)
-        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        const tutorId = id[0]['user_id']
+        const tblCollection = tblMethod.tbleCollection(tutorId)
 
         const sql = `UPDATE  ${tblCollection.report} SET accepted = 1, on_check = 0, tutor_comment ='' WHERE iom_id="${iomId}" AND exercises_id = ${exId} 
                      AND student_id = "${studentId}"`
 
+        const sql2 = `SELECT iom.title as iom_title, ex.iom_id, ex.title as ex_title,  ex.description as ex_description, 
+                             ex.link as ex_link, ex.mentor, DATE_FORMAT(ex.term, '%Y-%m-%d') as term, 
+                             ex.iom_level_id, ex.tag_id, answer.content as an_content, answer.link as an_link,answer.file_path 
+                             FROM ${tblCollection.report} as answer
+                             INNER JOIN ${tblCollection.subTypeTableIom} as ex ON answer.iom_id = ex.iom_id
+                             AND answer.exercises_id = ex.id_exercises 
+                             INNER JOIN ${tblCollection.iom} as iom ON answer.iom_id = iom.iom_id
+                             WHERE answer.student_id = "${studentId}" 
+                             AND answer.iom_id = "${iomId}" 
+                             AND answer.exercises_id = ${exId}`
+
+        const [result2] = await req.db.execute(sql2)
         const [result] = await req.db.execute(sql)
 
-        if(!result.affectedRows) {
-            response.status(201, {message:"Ошибка при одобрении. Обратиетсь к разработчикам"},res)
+
+        if(result2 && result2.length) {
+            let r = result2[0]
+            const sql3 = `INSERT INTO global_history_reports 
+                                     (iom_title,iom_id,exercise_title,exercise_description,
+                                     exercise_link,mentor_id,term,tag_id,iom_level_id,
+                                     tutor_id,student_id,answer_text,answer_link,file_path) 
+                                     VALUES ("${r['iom_title']}","${r['iom_id']}","${r['ex_title']}",
+                                             "${r['ex_description']}","${r['ex_link']}",${r['mentor']},
+                                             "${r['term']}", ${r['tag_id']}, ${r['iom_level_id']},"${tutorId}",
+                                             "${studentId}","${r['an_content']}","${r['an_link']}","${r['file_path']}")`
+            const [result3] = await req.db.execute(sql3)
+
+            if(result3.insertId && !result.affectedRows) {
+                response.status(201, {message:"Ошибка при одобрении. Обратиетсь к разработчикам"},res)
+            }else {
+                response.status(200,{message:"Ответ слушателя принят"},res)
+            }
+
         }else {
-            response.status(200,{message:"Ответ слушателя принят"},res)
+            response.status(201, {message:"Ошибка при одобрении. Обратиетсь к разработчикам"},res)
         }
 
     }catch (e) {
