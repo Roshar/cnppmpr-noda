@@ -6,9 +6,7 @@ const jwt = require('jsonwebtoken')
 const DB = require('./../settings/db')
 const config = require('./../dbenv')
 const nodemailer = require('nodemailer')
-const tblMethod = require('./../use/tutorTblCollection')
 const { networkInterfaces } = require('os');
-const generationAvatar = require('./../use/randomImage')
 
 exports.signup = async (req, res) => {
     try{
@@ -47,23 +45,6 @@ exports.signup = async (req, res) => {
                 let sqlUser = "INSERT INTO `users`(`id_user`,`login`,`password`,`role`) VALUES ('" + id_user + "','" + login + "','" + hashPass + "','" + role + "')";
                 let [result]  = await req.db.execute(sqlUser)
                 let [result2]  = await req.db.execute(sqlOption)
-                if(roleCheck === "tutor") {
-                    const tblCollection = tblMethod.tbleCollection(id_user)
-                    const tutorOptions = "INSERT INTO `global_workplace_tutors` (`user_id`,`table_iom`,`table_student`,`table_mentor`,`table_report`,`table_library`,`table_sub_type_iom`,`discipline_id`) VALUES ('" + id_user + "','" + tblCollection.iom + "','" + tblCollection.student + "','" + tblCollection.mentor + "','" + tblCollection.report + "','" + tblCollection.library + "','" + tblCollection.subTypeTableIom + "','" + discipline + "')";
-                    const generationIom = `CREATE TABLE ${tblCollection.iom} (id SERIAL NOT NULL, iom_id VARCHAR(255) NOT NULL, title VARCHAR(255) NOT NULL, description TEXT NULL DEFAULT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = InnoDB`;
-                    const generationStudents = `CREATE TABLE ${tblCollection.student} (id SERIAL NOT NULL, student_id VARCHAR(255) NOT NULL , iom_id VARCHAR(255) NOT NULL ) ENGINE = InnoDB`;
-                    const generationMentors = `CREATE TABLE ${tblCollection.mentor} (id SERIAL NOT NULL, firstname VARCHAR(255) NOT NULL ,lastname VARCHAR(255) NOT NULL, patronymic VARCHAR(255) DEFAULT NULL, area_id INT NOT NULL, discipline_id INT NOT NULL) ENGINE = InnoDB`;
-                    const generationReports = `CREATE TABLE ${tblCollection.report} ( id SERIAL NOT NULL ,iom_id VARCHAR(255) NOT NULL , student_id VARCHAR(255) NOT NULL , exercises_id INT NOT NULL , tag_id INT NOT NULL, content LONGTEXT NULL DEFAULT NULL, link VARCHAR(255) NULL DEFAULT NULL, file_path VARCHAR(255) NULL DEFAULT NULL, accepted INT NOT NULL DEFAULT '0', on_check INT NOT NULL DEFAULT '0', tutor_comment TEXT NULL DEFAULT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ) ENGINE = InnoDB`;
-                    const generationLibrary = `CREATE TABLE ${tblCollection.library} (id SERIAL NOT NULL, user_id VARCHAR(255) NULL DEFAULT NULL , title VARCHAR(255) NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , description TEXT NULL DEFAULT NULL , tag_id INT NOT NULL, iom_level_id INT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ) ENGINE = InnoDB`;
-                    const generationSubtypeIom = `CREATE TABLE ${tblCollection.subTypeTableIom} ( id_exercises SERIAL NOT NULL , iom_id VARCHAR(255) NOT NULL , title VARCHAR(255) NOT NULL , description TEXT NULL DEFAULT NULL , link VARCHAR(255) NULL DEFAULT NULL , mentor INT NOT NULL , term DATE NOT NULL  , tag_id INT NOT NULL, iom_level_id INT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = InnoDB;`
-                    await req.db.execute(tutorOptions)
-                    await req.db.execute(generationIom)
-                    await req.db.execute(generationStudents)
-                    await req.db.execute(generationMentors)
-                    await req.db.execute(generationReports)
-                    await req.db.execute(generationLibrary)
-                    await req.db.execute(generationSubtypeIom)
-                }
 
                 if(result && result2){
                     response.status(200,{message:'Регистрация прошла успешно!'},res)
@@ -123,7 +104,6 @@ exports.singin = async (req, res) => {
 
                     const [row2] = await req.db.execute(sql2)
 
-
                     if(!row2){
                         response.status(401,{message:'Ошибка при авторизации, попробуйте снова'},res)
                         return false
@@ -142,16 +122,13 @@ exports.singin = async (req, res) => {
         }
 
     } catch (e) {
-        // response.status(401,{message:'Ошибка соединения с БД'},res)
         console.log(e)
-
         response.status(401,{message: e.message},res)
     }
 }
 
 exports.logout = async (req, res) => {
     try{
-        console.log('Выход')
         const token = req.body.token
         const sql = 'DELETE FROM `authorization` WHERE `token_key` = "' + `${token}` +'"'
         const [rows] = await req.db.execute(sql)
@@ -235,7 +212,6 @@ exports.confirmcode = async (req, res) => {
 }
 
 exports.recovery = async (req, res) => {
-
 
     const login  = req.body.login.trim()
     const baseUrl = req.body.baseUrl
@@ -394,7 +370,7 @@ exports.changepassword = async (req, res) => {
 exports.getRole = async (req, res) => {
     try{
         const token = req.body.token
-        const sql = `SELECT role, status, login FROM authorization WHERE token_key = "${token}"`
+        const sql = `SELECT role, status, login FROM authorization WHERE token_key = "${token}" LIMIT 1`
         let sql2;
         const [rows] = await req.db.execute(sql)
         if(rows.length) {

@@ -1,7 +1,7 @@
 'use strict'
 const response = require('./../response')
-const DB = require('./../settings/db')
 const userId = require('./../use/getUserId')
+
 const tblMethod = require('./../use/tutorTblCollection')
 
 exports.getStudentsForTutor = async(req, res) => {
@@ -9,7 +9,6 @@ exports.getStudentsForTutor = async(req, res) => {
         const {filter, token} = req.body
         const tutor = await userId(req.db,token)
         const tutorId = tutor[0]['user_id'];
-
 
         const sql = `SELECT rts.group_id, rts.isset_iom, s.user_id, s.name, s.surname, s.patronymic, s.phone,
                         s.area_id, s.school_id, s.gender, 
@@ -20,7 +19,7 @@ exports.getStudentsForTutor = async(req, res) => {
                         INNER JOIN students as s ON rts.s_user_id = s.user_id
                         INNER JOIN area as a ON s.area_id = a.id_area
                         INNER JOIN schools as school ON s.school_id = school.id_school
-                        WHERE rts.t_user_id = "${tutorId}"`
+                        WHERE rts.t_user_id = "${tutorId}" AND finished_education = 0`
         const [students] = await req.db.execute(sql)
         if(students.length <= 0) {
             response.status(201, {},res)
@@ -36,7 +35,7 @@ exports.getStudentsForTutor = async(req, res) => {
 }
 
 /**
- * Получить уровни обрзования
+ * Получить уровни образования
  * ДЛЯ РАЗДЕЛА ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ О СЛУШАТЕЛЕ
  * Профиль СЛУШАТЕЛЬ
  */
@@ -242,23 +241,23 @@ exports.insertOrUpdateAdditionally = async(req, res) => {
     }
 }
 
-
-
+/**
+ * Участники ИОМа
+ * получить всех участников, для которых назначет текущий ИОМ
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
 exports.getUsersFromIomEducation = async(req, res) => {
     try {
-        const {filter, iomId, token} = req.body
-        const tutor = await userId(req.db,token)
-        const tutorId = tutor[0]['user_id'];
-
-        const tblCollection = tblMethod.tbleCollection(tutorId)
+        const {filter, iomId, param} = req.body
         if(!filter) {
-            const sql = `SELECT sub.student_id, s.name, s.surname, s.surname, s.patronymic,
+            const sql = `SELECT rsi.user_id as student_id, s.name, s.surname, s.surname, s.patronymic,
                                  s.area_id, s.school_id, s.gender, a.title_area, school.school_name,rsi.status 
-                          FROM ${tblCollection.student} as sub
-                          INNER JOIN students as s ON sub.student_id = s.user_id
+                          FROM relationship_student_iom as rsi
+                          INNER JOIN students as s ON rsi.user_id = s.user_id
                           INNER JOIN area as a ON s.area_id = a.id_area
-                          INNER JOIN relationship_student_iom as rsi ON rsi.user_id = sub.student_id
-                          INNER JOIN schools as school ON s.school_id = school.id_school WHERE sub.iom_id = "${iomId}"`
+                          INNER JOIN schools as school ON s.school_id = school.id_school
+                          WHERE rsi.iom_id = "${iomId}"`
+
             const [students] = await req.db.execute(sql)
 
             if(students.length <= 0) {
@@ -269,18 +268,18 @@ exports.getUsersFromIomEducation = async(req, res) => {
                 return true
             }
         }else {
-            const param = req.body.param
-            const sql = `SELECT sub.student_id, s.name, s.surname, s.surname, s.patronymic,
+            const sql = `SELECT rsi.user_id as student_id, s.name, s.surname, s.surname, s.patronymic,
                                  s.area_id, s.school_id, s.gender, a.title_area, school.school_name 
-                          FROM ${tblCollection.student} as sub
-                          INNER JOIN students as s ON sub.student_id = s.user_id
+                          FROM relationship_student_iom as rsi 
+                          INNER JOIN students as s ON rsi.user_id = s.user_id
                           INNER JOIN area as a ON s.area_id = a.id_area
-                          INNER JOIN schools as school ON s.school_id = school.id_school WHERE sub.iom_id = "${iomId}"
-                          AND (s.name LIKE "${param}%" OR s.surname LIKE "${param}%")`
+                          INNER JOIN schools as school ON s.school_id = school.id_school 
+                          WHERE rsi.iom_id = "${iomId}"
+                          AND (s.name LIKE "${param}%" OR s.surname LIKE "${param}%") LIMIT 1`
             const [students] = await req.db.execute(sql)
 
             if(students.length <= 0) {
-                response.status(201, {},res)
+                response.status(201, [],res)
             }else {
                 response.status(200,
                     students,res)
@@ -289,30 +288,34 @@ exports.getUsersFromIomEducation = async(req, res) => {
         }
 
     }catch (e) {
-        return e
+        console.log(e.message)
     }
 }
 
+
+/**
+ * отписать пользователя от ИОМа
+ * предварительно проверив возможность отписать
+ * (те, кто уже начал обучение, т.е отправил отчеты о выполнении заданий из ИОМ, не могут быть удалены)
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
 exports.deleteStudentFromIomEducation = async(req, res) => {
     try {
         const {studentId, iomId, token} = req.body
         const tutor = await userId(req.db,token)
         const tutorId = tutor[0]['user_id'];
 
-        const tblCollection = tblMethod.tbleCollection(tutorId)
-        const sqlCheckPossibility = `SELECT COUNT(id) as id FROM ${tblCollection.report} WHERE iom_id = "${iomId}"
+        const sqlCheckPossibility = `SELECT COUNT(id) as id FROM a_report WHERE iom_id = "${iomId}"
                                      AND student_id="${studentId}"`
         const [checkPossibility] = await req.db.execute(sqlCheckPossibility)
 
         if(!checkPossibility[0].id) {
-            const sql = `DELETE FROM ${tblCollection.student} WHERE iom_id = "${iomId}" AND student_id = "${studentId}"`
-            const [result] = await req.db.execute(sql)
 
             const deleteInTutorTblLocalSql = `DELETE FROM relationship_student_iom WHERE iom_id = "${iomId}" AND user_id = "${studentId}" AND tutor_id = "${tutorId}"`
-            const [result2] = await req.db.execute(deleteInTutorTblLocalSql)
+            const [result] = await req.db.execute(deleteInTutorTblLocalSql)
 
-            if(result.affectedRows && result2.affectedRows) {
-                const sql2 = `UPDATE relationship_tutor_student SET isset_iom = 0 
+            if(result.affectedRows) {
+                const sql2 = `UPDATE relationship_tutor_student SET isset_iom = 0
                          WHERE s_user_id = "${studentId}" AND t_user_id = "${tutorId}"`
                 const [result2] = await req.db.execute(sql2)
 
@@ -336,6 +339,7 @@ exports.deleteStudentFromIomEducation = async(req, res) => {
         return e
     }
 }
+
 
 
 exports.getUsersFromIomFreeForEducation = async(req, res) => {
@@ -436,7 +440,7 @@ exports.getStudentsForTutorWithGender = async(req, res) => {
                             INNER JOIN students as s ON rts.s_user_id = s.user_id
                             INNER JOIN area as a ON s.area_id = a.id_area
                             INNER JOIN schools as school ON s.school_id = school.id_school
-                            WHERE rts.t_user_id = "${tutorId}" AND s.gender = "${gender}"`
+                            WHERE rts.t_user_id = "${tutorId}" AND s.gender = "${gender}" AND finished_education = 0`
         const [students] = await req.db.execute(sql)
 
         if(students.length <= 0) {
@@ -452,6 +456,10 @@ exports.getStudentsForTutorWithGender = async(req, res) => {
     }
 }
 
+/**
+ * получить слушателей по полу и району
+ * профиль ТЬЮТОРА
+ */
 exports.getStudentsForTutorWithGenderAndArea = async(req, res) => {
     try {
         const token = req.body.token
@@ -469,7 +477,8 @@ exports.getStudentsForTutorWithGenderAndArea = async(req, res) => {
                             INNER JOIN students as s ON rts.s_user_id = s.user_id
                             INNER JOIN area as a ON s.area_id = a.id_area
                             INNER JOIN schools as school ON s.school_id = school.id_school
-                            WHERE rts.t_user_id = "${tutorId}" AND s.gender = "${gender}" AND s.area_id = ${areaId}`
+                            WHERE rts.t_user_id = "${tutorId}" AND s.gender = "${gender}" 
+                            AND s.area_id = ${areaId} AND finished_education = 0`
         const [students] = await req.db.execute(sql)
 
         if(students.length <= 0) {
@@ -484,6 +493,12 @@ exports.getStudentsForTutorWithGenderAndArea = async(req, res) => {
         return e
     }
 }
+
+
+/**
+ * получить слушателей по полу и району и ИОМу
+ * профиль ТЬЮТОРА
+ */
 
 exports.getStudentsForTutorWithGenderAndAreaAndIom = async(req, res) => {
     try {
@@ -504,8 +519,9 @@ exports.getStudentsForTutorWithGenderAndAreaAndIom = async(req, res) => {
                             INNER JOIN students as s ON rts.s_user_id = s.user_id
                             INNER JOIN area as a ON s.area_id = a.id_area
                             INNER JOIN schools as school ON s.school_id = school.id_school
-                            WHERE rts.t_user_id = "${tutorId}" AND s.gender = "${gender}" AND s.area_id = ${areaId} AND
-                            rts.isset_iom = ${iom} `
+                            WHERE rts.t_user_id = "${tutorId}" AND s.gender = "${gender}" 
+                            AND s.area_id = ${areaId} AND
+                            rts.isset_iom = ${iom} AND finished_education = 0`
         const [students] = await req.db.execute(sql)
 
         if(students.length <= 0) {
@@ -520,6 +536,12 @@ exports.getStudentsForTutorWithGenderAndAreaAndIom = async(req, res) => {
         return e
     }
 }
+
+
+/**
+ * получить слушателей по району и ИОМу
+ * профиль ТЬЮТОРА
+ */
 
 exports.getStudentsForTutorWithAreaAndIom = async(req, res) => {
     try {
@@ -540,7 +562,7 @@ exports.getStudentsForTutorWithAreaAndIom = async(req, res) => {
                             INNER JOIN area as a ON s.area_id = a.id_area
                             INNER JOIN schools as school ON s.school_id = school.id_school
                             WHERE rts.t_user_id = "${tutorId}" AND s.area_id = ${areaId} AND
-                            rts.isset_iom = ${iom} `
+                            rts.isset_iom = ${iom} AND finished_education = 0`
         const [students] = await req.db.execute(sql)
 
         if(students.length <= 0) {
@@ -555,6 +577,13 @@ exports.getStudentsForTutorWithAreaAndIom = async(req, res) => {
         return e
     }
 }
+
+
+
+/**
+ * получить слушателей по ИОМу
+ * профиль ТЬЮТОРА
+ */
 
 exports.getStudentsForTutorWithIom = async(req, res) => {
     try {
@@ -573,7 +602,7 @@ exports.getStudentsForTutorWithIom = async(req, res) => {
                             INNER JOIN students as s ON rts.s_user_id = s.user_id
                             INNER JOIN area as a ON s.area_id = a.id_area
                             INNER JOIN schools as school ON s.school_id = school.id_school
-                            WHERE rts.t_user_id = "${tutorId}" AND rts.isset_iom = ${iom} `
+                            WHERE rts.t_user_id = "${tutorId}" AND rts.isset_iom = ${iom} AND finished_education = 0`
         const [students] = await req.db.execute(sql)
 
         if(students.length <= 0) {
@@ -589,6 +618,11 @@ exports.getStudentsForTutorWithIom = async(req, res) => {
     }
 }
 
+
+/**
+ * получить слушателей по району
+ * профиль ТЬЮТОРА
+ */
 exports.getStudentsForTutorWithArea = async(req, res) => {
     try {
 
@@ -621,7 +655,10 @@ exports.getStudentsForTutorWithArea = async(req, res) => {
         return e
     }
 }
-
+/**
+ * получить слушателей по полу  и ИОМу
+ * профиль ТЬЮТОРА
+ */
 exports.getStudentsForTutorWithGenderAndIom = async(req, res) => {
     try {
 
@@ -641,7 +678,7 @@ exports.getStudentsForTutorWithGenderAndIom = async(req, res) => {
                             INNER JOIN area as a ON s.area_id = a.id_area
                             INNER JOIN schools as school ON s.school_id = school.id_school
                             WHERE rts.t_user_id = "${tutorId}" AND s.gender = "${gender}" AND
-                            rts.isset_iom = ${iom} `
+                            rts.isset_iom = ${iom} AND finished_education = 0`
         const [students] = await req.db.execute(sql)
 
         if(students.length <= 0) {
@@ -657,19 +694,20 @@ exports.getStudentsForTutorWithGenderAndIom = async(req, res) => {
     }
 }
 
+/**
+ * получить активный ИОМ со статусом 0 (0 - означает, что текущий ИОМ не заврешен, т.е. активен)
+ *  ПРОФИЛЬ СЛУШАТЕЛЬ
+ */
 exports.checkIssetMyIom = async(req, res) => {
     try {
-
         const studentId = req.body.studentId
         const tutorId = req.body.tutorId
-        const tblCollection = tblMethod.tbleCollection(tutorId)
         let iomSql = ` SELECT rsi.iom_id,iom.title FROM 
                         relationship_student_iom as rsi 
-                        INNER JOIN ${tblCollection.iom}  as iom
+                        INNER JOIN a_iom  as iom
                         ON  rsi.iom_id = iom.iom_id
                         WHERE rsi.user_id = "${studentId}"
-                        AND rsi.tutor_id = "${tutorId}"`
-
+                        AND rsi.tutor_id = "${tutorId}"  AND rsi.status = 0`
 
         let [result] = await req.db.execute(iomSql)
 
@@ -685,16 +723,24 @@ exports.checkIssetMyIom = async(req, res) => {
     }
 }
 
+
+
+/**
+ * получить статистику о прохождении ИОМа
+ * - Количество выполненных заданий
+ * - Количество заданий требующих доработку
+ * - Количество заданий на проверке
+ * - Количество незавершенных заданий
+ * ПРОФИЛЬ СЛУШАТЕЛЯ
+ */
 exports.getStatisticByIOM = async(req, res) => {
     try {
-
-        const {iomId, userId, tutorId} = req.body
-        const tblCollection = tblMethod.tbleCollection(tutorId)
-        let finishedTaskSQL = `SELECT COUNT(id) as id FROM ${tblCollection.report} WHERE iom_id = "${iomId}" 
+        const {iomId, userId} = req.body
+        let finishedTaskSQL = `SELECT COUNT(id) as id FROM a_report WHERE iom_id = "${iomId}" 
                        AND student_id = "${userId}" AND accepted = 1`
-        let onEditTaskSQL = `SELECT COUNT(id) as id FROM ${tblCollection.report} WHERE iom_id = "${iomId}" 
+        let onEditTaskSQL = `SELECT COUNT(id) as id FROM a_report WHERE iom_id = "${iomId}" 
                        AND student_id = "${userId}" AND accepted = 2`
-        let pendingTaskSQL = ` SELECT COUNT(id) as id FROM ${tblCollection.report} WHERE iom_id = "${iomId}"
+        let pendingTaskSQL = ` SELECT COUNT(id) as id FROM a_report WHERE iom_id = "${iomId}"
                        AND student_id = "${userId}" AND on_check = 1`
 
         let [finishedTask] = await req.db.execute(finishedTaskSQL)
@@ -703,8 +749,6 @@ exports.getStatisticByIOM = async(req, res) => {
 
         const result = [finishedTask,onEditTask,pendingTask]
 
-        console.log(result)
-
         if(!result.length) {
             response.status(201, [],res)
         }else {
@@ -718,26 +762,28 @@ exports.getStatisticByIOM = async(req, res) => {
 }
 
 
-//получаем все задания из назначенного иома | профиль студент
+/**
+ * получаем все задания из назначенного ИОМа
+ * профиль студент
+ */
 exports.getExercisesFromMyIom = async(req, res) => {
     try {
-        const {iomId, tutorId,token} = req.body
+        const {iomId, token} = req.body
         const student = await userId(req.db,token)
         const studentId = student[0]['user_id'];
-        const tblCollection = tblMethod.tbleCollection(tutorId)
 
         let iomSql = `SELECT sub.id_exercises, sub.iom_id,sub.mentor, sub.title, sub.description, 
                               DATE_FORMAT(sub.term, '%d.%m.%Y') as term, 
                               sub.tag_id, sub.link, t.id_tag,t.title_tag,report.accepted, report.on_check
-                        FROM ${tblCollection.subTypeTableIom} as sub
+                        FROM a_exercise as sub
                         INNER JOIN tag as t ON sub.tag_id = t.id_tag 
-                        LEFT OUTER JOIN ${tblCollection.report} as report ON sub.id_exercises = report.exercises_id 
+                        LEFT OUTER JOIN a_report as report ON sub.id_exercises = report.exercises_id 
                         AND report.student_id = "${studentId}"
                         WHERE sub.iom_id = "${iomId}"`
 
         let [result] = await req.db.execute(iomSql)
 
-        let distinct = `SELECT DISTINCT sub.tag_id,t.title_tag  FROM ${tblCollection.subTypeTableIom} as sub
+        let distinct = `SELECT DISTINCT sub.tag_id,t.title_tag  FROM a_exercise as sub
                         INNER JOIN tag as t ON sub.tag_id = t.id_tag  
                         WHERE sub.iom_id = "${iomId}"`
         let [result2] = await req.db.execute(distinct)
@@ -755,7 +801,10 @@ exports.getExercisesFromMyIom = async(req, res) => {
     }
 }
 
-
+/**
+ * получить задание из ИОМа сшулателя для добавления ответа или внесения изменений
+ * ПРОФИЛЬ СЛУШАТЕЛЯ
+ */
 exports.getMyTaskById = async(req, res) => {
 
     try {
@@ -768,8 +817,6 @@ exports.getMyTaskById = async(req, res) => {
         let [access] = await req.db.execute(accessSQl)
 
         if(access.length) {
-            const tblCollection = tblMethod.tbleCollection(access[0]['tutor_id'])
-            const tbl = tblCollection.subTypeTableIom
             let taskSql = `SELECT    
                             t.id_exercises,
                             t.iom_id, 
@@ -785,9 +832,9 @@ exports.getMyTaskById = async(req, res) => {
                             report.link as report_link,
                             report.id as report_id,
                             DATE_FORMAT(t.term, '%d.%m.%Y') as term,
-                            t.tag_id FROM ${tbl} as t 
+                            t.tag_id FROM a_exercise as t 
                             INNER JOIN tag ON t.tag_id = tag.id_tag
-                            LEFT OUTER JOIN ${tblCollection.report} as report ON t.id_exercises = report.exercises_id
+                            LEFT OUTER JOIN a_report as report ON t.id_exercises = report.exercises_id
                             AND report.student_id = "${studentId}"
                             WHERE t.iom_id = "${iomId}" AND t.id_exercises = "${taskId}"`
             let [taskData] = await req.db.execute(taskSql)
@@ -853,6 +900,10 @@ exports.getCommentsByTask = async(req, res) => {
 }
 
 
+/**
+ * добавить комментарий (к заданию)
+ * ПРОФИЛЬ СТУДЕНТ
+ */
 exports.sendCommentsForTask = async(req, res) => {
 
     try {
@@ -882,7 +933,11 @@ exports.sendCommentsForTask = async(req, res) => {
     }
 }
 
-
+/**
+ * добавить ответ без файла
+ * предварительно проверяя был ли отправлен ответ по текущему заданию
+ * ПРОФИЛЬ СТУДЕНТА
+ */
 exports.insertInReportWithoutFile = async(req, res) => {
     try {
 
@@ -900,15 +955,16 @@ exports.insertInReportWithoutFile = async(req, res) => {
         let [access] = await req.db.execute(accessSQl)
 
         if(access.length) {
-            const tblCollection = tblMethod.tbleCollection(access[0]['tutor_id'])
-            const tbl = tblCollection.report
-            const checkIssetReport = `SELECT id FROM ${tbl} WHERE exercises_id =${taskId} AND iom_id = "${iomId}" AND student_id = "${studentId}"`
+
+            const checkIssetReport = `SELECT id FROM a_report WHERE exercises_id =${taskId} AND iom_id = "${iomId}" AND student_id = "${studentId}"`
             let [checkData] = await req.db.execute(checkIssetReport)
             if(!checkData.length) {
-                const taskSql = `INSERT INTO ${tbl} (iom_id, student_id, exercises_id, tag_id, content, link, on_check) VALUES ("${iomId}","${studentId}",${taskId},${category}, "${content}","${link}",1)`
+                const taskSql = `INSERT INTO a_report (iom_id, student_id, tutor_id, exercises_id, tag_id, content, link, on_check)
+                                 VALUES ("${iomId}","${studentId}","${access[0]['tutor_id']}", ${taskId},${category}, "${content}","${link}",1)`
                 let [taskData] = await req.db.execute(taskSql)
                 if(!taskData.insertId) {
-                    response.status(400, {message: 'Возникла временная ошибка, обратитесь к тьютору'},res)
+                    response.status(400,
+                        {message: 'Возникла временная ошибка, обратитесь к тьютору'},res)
                 }else {
                     response.status(200,
                         {message: 'Ваш ответ принят'},res)
@@ -928,6 +984,11 @@ exports.insertInReportWithoutFile = async(req, res) => {
     }
 }
 
+/**
+ * добавить ответ с файлом
+ * предварительно проверяя был ли отправлен ответ по текущему заданию
+ * ПРОФИЛЬ СТУДЕНТА
+ */
 exports.insertInReportWithFile = async(req, res) => {
     try {
         const fileName = req.file.filename
@@ -944,15 +1005,13 @@ exports.insertInReportWithFile = async(req, res) => {
         let [access] = await req.db.execute(accessSQl)
 
         if(access.length) {
-            const tblCollection = tblMethod.tbleCollection(access[0]['tutor_id'])
-            const tbl = tblCollection.report
-            const checkIssetReport = `SELECT id FROM ${tbl} WHERE exercises_id =${taskId} AND iom_id = "${iomId}" AND student_id = "${studentId}"`
+            const checkIssetReport = `SELECT id FROM a_report WHERE exercises_id = ${taskId} AND iom_id = "${iomId}" AND student_id = "${studentId}"`
             let [checkData] = await req.db.execute(checkIssetReport)
             if(!checkData.length) {
-                const taskSql = `INSERT INTO ${tbl} 
-                                (iom_id, student_id, exercises_id, tag_id, content, link, file_path, on_check ) 
+                const taskSql = `INSERT INTO a_report 
+                                (iom_id, student_id, tutor_id, exercises_id, tag_id, content, link, file_path, on_check) 
                                 VALUES 
-                                ("${iomId}","${studentId}",${taskId},${category}, "${content}","${link}","${fileName}",1)`
+                                ("${iomId}","${studentId}","${access[0]['tutor_id']}", ${taskId}, ${category}, "${content}","${link}","${fileName}",1)`
                 let [taskData] = await req.db.execute(taskSql)
                 if(!taskData.insertId) {
                     response.status(400, {message: 'Возникла временная ошибка, обратитесь к тьютору'},res)
@@ -975,6 +1034,12 @@ exports.insertInReportWithFile = async(req, res) => {
     }
 }
 
+
+/**
+ * в случаю, если ответ требовал внесений изменений
+ * обновление ответа без файла
+ * ПРОФИЛЬ СТУДЕНТА
+ */
 exports.updateInReportWithoutFile = async(req, res) => {
     try {
         const iomId = req.body.iomId
@@ -987,13 +1052,12 @@ exports.updateInReportWithoutFile = async(req, res) => {
 
         const id = await userId(req.db,token)
         const studentId = id[0]['user_id']
-        const accessSQl = `SELECT tutor_id FROM relationship_student_iom WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`
+        const accessSQl = `SELECT tutor_id FROM relationship_student_iom 
+            WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`
         let [access] = await req.db.execute(accessSQl)
 
         if(access.length) {
-            const tblCollection = tblMethod.tbleCollection(access[0]['tutor_id'])
-            const tbl = tblCollection.report
-            const taskSql = `UPDATE ${tbl} SET content ="${content}", link = "${link}",accepted = 0,
+            const taskSql = `UPDATE a_report SET content ="${content}", link = "${link}",accepted = 0,
                              on_check = 1, created_at = CURRENT_TIMESTAMP 
                              WHERE id = ${reportId} AND exercises_id = ${taskId}`
             let [taskData] = await req.db.execute(taskSql)
@@ -1013,8 +1077,13 @@ exports.updateInReportWithoutFile = async(req, res) => {
     }
 }
 
-exports.updateInReportWithFile = async(req, res) => {
 
+/**
+ * в случаю, если ответ требовал внесений изменений
+ * обновление ответа c файлом
+ * ПРОФИЛЬ СТУДЕНТА
+ */
+exports.updateInReportWithFile = async(req, res) => {
     try {
         const fileName = req.file.filename
         const iomId = req.body.iomId
@@ -1026,13 +1095,13 @@ exports.updateInReportWithFile = async(req, res) => {
 
         const id = await userId(req.db,token)
         const studentId = id[0]['user_id']
-        const accessSQl = `SELECT tutor_id FROM relationship_student_iom WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`
+        const accessSQl = `SELECT tutor_id FROM relationship_student_iom 
+                           WHERE user_id = "${studentId}" AND iom_id = "${iomId}"`
         let [access] = await req.db.execute(accessSQl)
 
         if(access.length) {
-            const tblCollection = tblMethod.tbleCollection(access[0]['tutor_id'])
-            const tbl = tblCollection.report
-            const taskSql = `UPDATE ${tbl} SET content ="${content}", link = "${link}", file_path="${fileName}", accepted = 0,
+
+            const taskSql = `UPDATE a_report SET content ="${content}", link = "${link}", file_path="${fileName}", accepted = 0,
                              on_check = 1, created_at = CURRENT_TIMESTAMP
                              WHERE id = ${reportId} AND exercises_id = ${taskId}`
             let [taskData] = await req.db.execute(taskSql)

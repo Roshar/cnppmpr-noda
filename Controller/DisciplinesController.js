@@ -1,6 +1,5 @@
 'use strict'
 const response = require('./../response')
-const DB = require('./../settings/db')
 
 exports.getDisciplines = async(req, res) => {
     try {

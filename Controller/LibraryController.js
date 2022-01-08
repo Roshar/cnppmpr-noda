@@ -5,14 +5,18 @@ const DB = require('./../settings/db')
 const tblMethod = require('./../use/tutorTblCollection')
 const userId = require('./../use/getUserId')
 
+/**
+ * получить все элементы из локальной библиотеки
+ * профиль ТЬЮТОР
+ */
+
 exports.getLibraryData  = async(req, res) => {
     try {
-
         const id = await userId(req.db,req.body.token)
-        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        const tutorId = id[0]['user_id']
         let libDataSql = `SELECT
                             l.id,
-                            l.user_id,
+                            l.tutor_id,
                             l.title,
                             l.link,
                             l.description,
@@ -21,14 +25,13 @@ exports.getLibraryData  = async(req, res) => {
                             tag.title_tag,
                             level.title as level_title, 
                             level.id as level_id 
-        FROM ${tblCollection.library} as l 
+        FROM a_library as l 
         INNER JOIN tag ON l.tag_id = tag.id_tag
-        INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id`
-
+        INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id WHERE l.tutor_id = "${tutorId}"`
         const [libData] = await req.db.execute(libDataSql)
 
         if(!libData.length) {
-            response.status(201, {},res)
+            response.status(201, [],res)
         }else {
             response.status(200,
                 libData,res)
@@ -38,6 +41,40 @@ exports.getLibraryData  = async(req, res) => {
         return e
     }
 }
+
+// exports.getLibraryData  = async(req, res) => {
+//     try {
+//
+//         const id = await userId(req.db,req.body.token)
+//         const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+//         let libDataSql = `SELECT
+//                             l.id,
+//                             l.user_id,
+//                             l.title,
+//                             l.link,
+//                             l.description,
+//                             l.tag_id,
+//                             tag.id_tag,
+//                             tag.title_tag,
+//                             level.title as level_title,
+//                             level.id as level_id
+//         FROM ${tblCollection.library} as l
+//         INNER JOIN tag ON l.tag_id = tag.id_tag
+//         INNER JOIN global_iom_levels as level ON l.iom_level_id = level.id`
+//
+//         const [libData] = await req.db.execute(libDataSql)
+//
+//         if(!libData.length) {
+//             response.status(201, {},res)
+//         }else {
+//             response.status(200,
+//                 libData,res)
+//             return true
+//         }
+//     }catch (e) {
+//         return e
+//     }
+// }
 
 exports.addExercise = async(req, res) => {
     try {

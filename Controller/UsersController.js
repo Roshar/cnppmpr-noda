@@ -1,11 +1,13 @@
 'use strict'
 const response = require('./../response')
-const DB = require('./../settings/db')
-const tblMethod = require('./../use/tutorTblCollection')
+const fs = require('fs');
 const userId = require('./../use/getUserId')
 const roleTbl = require('./../use/roleTbl')
 
-
+/**
+ * получить данные для иконки АККАУНТ в Navbar
+ * ПРОФИЛЬ АДМИНА
+ */
 exports.getAdminData = async(req, res) => {
 
     const admin = await userId(req.db,req.body.user)
@@ -20,6 +22,11 @@ exports.getAdminData = async(req, res) => {
         return true
     }
 }
+
+/**
+ * получить данные для иконки АККАУНТ в Navbar
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
 exports.getTutorData = async(req, res) => {
     const tutor = await userId(req.db,req.body.user)
     const tutorId = tutor[0]['user_id']
@@ -34,15 +41,17 @@ exports.getTutorData = async(req, res) => {
     }
 }
 
-
+/**
+ * Удалить тьютора
+ * удаляем все связаные с тьютором записи:
+ * - иомы,отчеты,библиотеку с заданиями,запросы на удаления, комментарии
+ * ПРОФИЛЬ АДМИНА
+ */
 exports.deleteTutor = async(req, res) => {
-
-
     const code = req.body.code
     const tutorId = req.body.tutorId
     const admin = await userId(req.db,req.body.token)
     const role = admin[0]['role']
-    const tblCollection = tblMethod.tbleCollection(tutorId)
 
     if(role === 'admin' && code === '5808'){
         try {
@@ -51,17 +60,12 @@ exports.deleteTutor = async(req, res) => {
             const rts = `DELETE FROM relationship_tutor_student  WHERE t_user_id = "${tutorId}"`
             const rsi = `DELETE FROM relationship_student_iom  WHERE tutor_id = "${tutorId}"`
             const permissionToDelete = `DELETE FROM permission_to_delete_iom  WHERE tutor_id = "${tutorId}"`
-            const globalWorkplaceTutors = `DELETE FROM global_workplace_tutors  WHERE user_id = "${tutorId}"`
-            const countIom = `DELETE FROM count_iom WHERE tutor_id = "${tutorId}"`
             const [delTut] = await req.db.execute(tutors)
             const [delUser] = await req.db.execute(users)
-            const [gwt] = await req.db.execute(globalWorkplaceTutors)
             await req.db.execute(rts)
             await req.db.execute(rsi)
             await req.db.execute(permissionToDelete)
-            await req.db.execute(countIom)
-            await req.db.execute(countIom)
-            const groupIdDelSQl = `SELECT id FROM groups_relationship  WHERE tutor_id = "${tutorId}"`
+            const groupIdDelSQl = `SELECT id FROM groups_relationship WHERE tutor_id = "${tutorId}"`
             const [groupIdDel] = await req.db.execute(groupIdDelSQl)
             if(groupIdDel.length) {
                 const id = groupIdDel[0]['id']
@@ -71,20 +75,19 @@ exports.deleteTutor = async(req, res) => {
                 await req.db.execute(deleteGroup)
             }
 
-            const deleteTblIom = `DROP TABLE ${tblCollection.iom}`
-            const deleteTblLibrary = `DROP TABLE ${tblCollection.library}`
-            const deleteTblMentor = `DROP TABLE ${tblCollection.mentor}`
-            const deleteTblReport = `DROP TABLE ${tblCollection.report}`
-            const deleteTblStudent = `DROP TABLE ${tblCollection.student}`
-            const deleteTblSubTypeTableIom = `DROP TABLE ${tblCollection.subTypeTableIom}`
+            const deleteTblIom = `DELETE FROM a_iom WHERE tutor_id = ${tutorId}`
+            const deleteTblLibrary = `DELETE FROM a_library WHERE tutor_id = ${tutorId}`
+            const deleteTblReport = `DELETE FROM a_report WHERE tutor_id = ${tutorId}`
+            const deleteTblSubTypeTableIom = `DELETE FROM a_exercise WHERE tutor_id = ${tutorId}`
+            const deleteQuestionTask = `DELETE FROM question_for_task WHERE sender_id = "${tutorId}" 
+                                        OR recipient_id = "${tutorId}"`
                                                 await req.db.execute(deleteTblIom)
                                                 await req.db.execute(deleteTblLibrary)
-                                                await req.db.execute(deleteTblMentor)
                                                 await req.db.execute(deleteTblReport)
-                                                await req.db.execute(deleteTblStudent)
                                                 await req.db.execute(deleteTblSubTypeTableIom)
+                                                await req.db.execute(deleteQuestionTask)
 
-            if(!delTut.affectedRows || !delUser.affectedRows || !gwt.affectedRows) {
+            if(!delTut.affectedRows || !delUser.affectedRows) {
                 response.status(201, {message:"ПРОИЗОШЕЛ СБОЙ ПРИ ВЫПОЛНЕНИИ ОПЕРАЦИИ.СРОЧНО ОБРАТИТЕСЬ К РАЗРАБОТЧИКАМ"}, res)
             }else {
                 response.status(200, {message: 'Тьютор и все связанные с ним данные были удалены!'}, res)
@@ -100,28 +103,59 @@ exports.deleteTutor = async(req, res) => {
     }
 }
 
+/**
+ * Удалить слушателя
+ * проверка роли и кода доступа
+ * удаляем папку с ответами если они есть
+ * ПРОФИЛЬ АДМИН
+ */
+
 exports.deleteStudent = async(req, res) => {
     const code = req.body.code
     const idStudent = req.body.idStudent
     const admin = await userId(req.db,req.body.token)
     const role = admin[0]['role']
-    const issetTutorForStudentSql = `SELECT t_user_id, isset_iom FROM relationship_tutor_student WHERE s_user_id = "${idStudent}"`
+    const issetTutorForStudentSql = `SELECT isset_iom FROM relationship_tutor_student 
+                                     WHERE s_user_id = "${idStudent}"`
     const [issetTutorForStudent] = await req.db.execute(issetTutorForStudentSql)
+
+    const path = `uploads/answer/${idStudent}`
+
+
+    // удаляем папку с ответами
+    function deleteFolder(path) {
+        try{
+            let files = [];
+            if( fs.existsSync(path) ) {
+                files = fs.readdirSync(path);
+                files.forEach(function(file,index){
+                    let curPath = path + "/" + file;
+                    if(fs.statSync(curPath).isDirectory()) {
+                        deleteFolder(curPath);
+                    } else {
+                        fs.unlinkSync(curPath);
+                    }
+                });
+                fs.rmdirSync(path);
+            }
+        }catch(e) {
+            console.log(e)
+        }
+
+    }
 
     if(role === 'admin' && code === '5808') {
         if(issetTutorForStudent.length) {
-            const tutorId = issetTutorForStudent[0]['t_user_id']
+            deleteFolder(path)
             const issetIom = issetTutorForStudent[0]['isset_iom']
-            const tblCollection = tblMethod.tbleCollection(tutorId)
-            const deleteDependencies1 = `DELETE FROM relationship_tutor_student WHERE s_user_id = "${idStudent}" AND t_user_id = "${tutorId}"`
-                                     await req.db.execute(deleteDependencies1)
+            const deleteDependencies1 = `DELETE FROM relationship_tutor_student 
+                                         WHERE s_user_id = "${idStudent}"`
+                                         await req.db.execute(deleteDependencies1)
 
             if(issetIom === 1) {
-                const deleteDependencies2 = `DELETE FROM relationship_student_iom WHERE user_id = "${idStudent}" AND tutor_id = "${tutorId}"`
-                const deleteInTutorTblStudent = `DELETE FROM ${tblCollection.student} WHERE student_id = "${idStudent}"`
-                const deleteInTutorTblReport = `DELETE FROM ${tblCollection.report} WHERE student_id = "${idStudent}"`
+                const deleteDependencies2 = `DELETE FROM relationship_student_iom WHERE user_id = "${idStudent}"`
+                const deleteInTutorTblReport = `DELETE FROM a_report WHERE student_id = "${idStudent}"`
                                     await req.db.execute(deleteDependencies2)
-                                    await req.db.execute(deleteInTutorTblStudent)
                                     await req.db.execute(deleteInTutorTblReport)
             }
         }
@@ -130,8 +164,18 @@ exports.deleteStudent = async(req, res) => {
         const users = `DELETE FROM users WHERE id_user = "${idStudent}"`
         const authorizationTbl= `DELETE FROM authorization WHERE user_id = "${idStudent}"`
                                 await req.db.execute(authorizationTbl)
+
+        const studentsAdditionallySql = `DELETE FROM students_additionally WHERE student_id = "${idStudent}"`;
+        await req.db.execute(studentsAdditionallySql)
+
+        // Удалить все комментарии(обсуждения) связанные с тьютором
+        const deleteQuestionTask = `DELETE FROM question_for_task WHERE sender_id = "${idStudent}" 
+                                        OR recipient_id = "${idStudent}"`
+
         const [deleteUser] = await req.db.execute(users)
         const [deleteStudent] = await req.db.execute(students)
+                                await req.db.execute(deleteQuestionTask)
+
         if(deleteUser.affectedRows && deleteStudent.affectedRows) {
             response.status(200, {message: 'Слушатель и все связанные с ним данные были удалены!'}, res)
             return true
@@ -143,8 +187,8 @@ exports.deleteStudent = async(req, res) => {
     }else {
         response.status(201, {message: 'Нет доступа для выполнения данной операции'}, res)
     }
-
 }
+
 
 exports.getDataAdminAccount = async(req, res) => {
     try {
@@ -233,14 +277,17 @@ exports.sendCommentsForTaskTutor = async(req, res) => {
     }
 }
 
-
+/**
+ *  получить данные пользователя и связанные с пользователем данные:
+ *   - для слушателя, это его данные и данные о налчии тьютора и ИОМа
+ *   - для тьютора, это его данные и данные о назначенных для него слушателей
+ *    ПРОФИЛЬ СЛУШАТЕЛЬ | ПРОФИЛЬ ТЬЮТОРА
+ */
 
 exports.getUserData = async(req, res) => {
     try {
-        const sql = `SELECT * FROM authorization WHERE token_key = "${req.body.user}" `
-        const [userData] = await req.db.execute(sql)
-        const tblName = userData[0].role
-
+        const userData = await userId(req.db,req.body.user)
+        const tblName = userData[0]['role']
         let mainInfoData = {
             student: [
                 `SELECT students.user_id, students.name, students.surname, students.patronymic, u.login,students.avatar,
@@ -273,10 +320,10 @@ exports.getUserData = async(req, res) => {
         let returnData = async (tblName, mysqlAction) => {
             return (tblName) ? await mysqlAction : null
         }
+
         const [mainInfo] = await returnData(mainInfoData[tblName], req.db.execute(mainInfoData[tblName][0]));
-        // const mainInfo = await returnData(mainInfoData[tblName], userObj.create(mainInfoData[tblName][0]));
-        // const linkInfo = await returnData(mainInfoData[tblName], userObj.create(mainInfoData[tblName][1]));
         const [linkInfo] = await returnData(mainInfoData[tblName], req.db.execute(mainInfoData[tblName][1]));
+
         const result = [mainInfo[0],linkInfo[0]]
 
         if(userData.length <= 0) {
@@ -292,8 +339,6 @@ exports.getUserData = async(req, res) => {
 
 
 exports.getAllUsers = async (req, res) => {
-
-
     const sql = 'SELECT * FROM `users`'
     const [rows] = await req.db.execute(sql)
     if(rows){
@@ -303,22 +348,29 @@ exports.getAllUsers = async (req, res) => {
     }
 }
 
+
+/**
+ * получить даные для главной страницу(страница профиля) тьютора
+ *
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
 exports.getFromTutorTbls = async (req, res) => {
 
     const sqlGetUserId = `SELECT user_id FROM authorization WHERE token_key = "${req.body.token}"`
-    const [id_user] = await req.db.execute(sqlGetUserId)
-    const tblCollection = tblMethod.tbleCollection(id_user[0]['user_id'])
+    const [userData] = await req.db.execute(sqlGetUserId)
+    const tutor_id = userData[0]['user_id']
+
 
     //общее количество ИОМов
-    const countTutorIom = `SELECT COUNT(*) FROM ${tblCollection.iom}`
+    const countTutorIom = `SELECT COUNT(*) FROM a_iom WHERE tutor_id = "${tutor_id}"`
     const [countIom] = await req.db.execute(countTutorIom)
 
     // общее кол-во слушатлей с ИОМ
-    const countStudentsWithIom = `SELECT COUNT(*) FROM ${tblCollection.student}`
+    const countStudentsWithIom = `SELECT COUNT(*) FROM relationship_student_iom WHERE tutor_id = "${tutor_id}" `
     const [countStudentsIom] = await req.db.execute(countStudentsWithIom)
 
     // кол-во завершивших ИОМы
-    const finishedIomSql = `SELECT COUNT(*) FROM relationship_student_iom WHERE tutor_id = "${id_user[0]['user_id']}" 
+    const finishedIomSql = `SELECT COUNT(*) FROM relationship_student_iom WHERE tutor_id = "${tutor_id}" 
                             AND status = 1`;
     const [finishedIom] = await req.db.execute(finishedIomSql)
 
@@ -356,8 +408,6 @@ exports.updateTutorProfile = async (req, res) => {
 }
 
 exports.updateAdminProfile = async (req, res) => {
-
-    // console.log(req.body)
     const {name, surname, patronymic, login, birthday, phone, gender, token} = req.body
     const admin = await userId(req.db, token)
     const adminId = admin[0]['user_id']
@@ -368,7 +418,7 @@ exports.updateAdminProfile = async (req, res) => {
                       patronymic = "${patronymic}", phone = "${phone}",
                        birthday = "${birthday}", gender="${gender}" WHERE user_id = "${adminId}"`
         const [result] =  await req.db.execute(sql3)
-        console.log(result)
+
         if(result.affectedRows) {
             response.status(200,{message:'Ваш профиль обновлен'},res)
         }

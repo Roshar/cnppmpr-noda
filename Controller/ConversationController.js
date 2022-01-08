@@ -1,6 +1,5 @@
 'use strict'
 const response = require('./../response')
-const DB = require('./../settings/db')
 const userId = require('./../use/getUserId')
 const tbl = require('./../use/roleTbl')
 
@@ -49,7 +48,6 @@ exports.send = async(req,res) => {
 
 exports.getCompanions = async(req,res) => {
     try {
-        console.log(req.body)
         const token = req.body.token
         const senderId = await userId(req.db,token)
 
