@@ -7,14 +7,12 @@ const fs = require ('fs');
 /**
  *  проверка на существование ИОМа по id
  */
-
 exports.issetIomId = async(req, res) => {
     try {
         let iomSql = `SELECT id FROM a_iom WHERE iom_id = "${req.body.payload.id}"`
-        const [iomData] = await req.db.execute(iomSql)
+        const [result] = await req.db.execute(iomSql)
 
-        let result = [iomData]
-        if(!iomData) {
+        if(!result) {
             response.status(401, {message:"не существующий маршрут"},res)
         }else {
             response.status(200,

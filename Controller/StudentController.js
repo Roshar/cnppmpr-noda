@@ -2,8 +2,6 @@
 const response = require('./../response')
 const userId = require('./../use/getUserId')
 
-const tblMethod = require('./../use/tutorTblCollection')
-
 exports.getStudentsForTutor = async(req, res) => {
     try {
         const {filter, token} = req.body
@@ -349,7 +347,6 @@ exports.getUsersFromIomFreeForEducation = async(req, res) => {
         const tutor = await userId(req.db,token)
         const tutorId = tutor[0]['user_id'];
 
-        const tblCollection = tblMethod.tbleCollection(tutorId)
         if(!filter) {
             const sql = `SELECT rts.group_id, rts.isset_iom, s.user_id, s.name, s.surname, s.patronymic,  u.login,
                                 s.school_id, school.school_name
@@ -398,14 +395,10 @@ exports.addStudentInCurrentIom = async(req, res) => {
         const tutor = await userId(req.db,token)
         const tutorId = tutor[0]['user_id'];
 
-        const tblCollection = tblMethod.tbleCollection(tutorId)
-        const insertInTutorTblLocal = `INSERT INTO ${tblCollection.student} (student_id, iom_id) VALUES ("${studentId}", "${iomId}")`
-        const [result] = await req.db.execute(insertInTutorTblLocal)
-
         const insertInRelationship_student_iom = `INSERT INTO relationship_student_iom (user_id, tutor_id, iom_id) VALUES ("${studentId}","${tutorId}", "${iomId}")`
-        const [result3] = await req.db.execute(insertInRelationship_student_iom)
+        const [result] = await req.db.execute(insertInRelationship_student_iom)
 
-        if(result.insertId && result3.insertId) {
+        if(result.insertId) {
             const sql = `UPDATE relationship_tutor_student SET isset_iom = 1 
                          WHERE s_user_id = "${studentId}" AND t_user_id = "${tutorId}"`
             let [result2] = await req.db.execute(sql)
