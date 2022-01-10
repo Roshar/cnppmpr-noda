@@ -119,11 +119,14 @@ exports.getFinishedCourses = async(req,res) => {
 
 /**
  *  Создание итогового отчета по слушателю
- *
+ *  сгенерировать в случае, если нет отчета
+ *  скачать в случае, если ранее отчет был сформирован
  */
+
 exports.generationReportByStudentEducation = async(req,res) => {
 
         const {student_id, iom_id, token} = req.body
+
         const tutor = await userId(req.db,token)
         const tutorId = tutor[0]['user_id'];
 
@@ -202,7 +205,7 @@ exports.generationReportByStudentEducation = async(req,res) => {
         let pdf = require("pdf-creator-node");
         let fs = require("fs");
 
-        if(studentInfo.length && tutorInfo.length && iomInfo.length && exerciseData.length && additionallyData.length) {
+        if(studentInfo.length && tutorInfo.length && iomInfo.length && exerciseData.length) {
             // передаем шаблон отчета
             let html = fs.readFileSync('template.html', "utf8");
 
@@ -225,6 +228,7 @@ exports.generationReportByStudentEducation = async(req,res) => {
                 }
             };
 
+            const dd = new Date()
             let document = {
                 html: html,
                 data: {
@@ -234,14 +238,18 @@ exports.generationReportByStudentEducation = async(req,res) => {
                     iom: iomInfo[0],
                     addInfo: additionallyData[0]
                 },
-                path: "./uploads/report/" + student_id + ".pdf",
+                path: "./uploads/report/" + dd.getFullYear() + '/'+ tutorId +'/'+ iom_id +'/' + student_id + ".pdf",
                 type: "",
             };
 
             await pdf
                 .create(document, options)
                 .then((result) => {
-                    console.log(result);
+                    let position = result['filename'].search("uploads");
+                    let linkInfo = result['filename'].substr(position);
+                    const insertIntoRsiSql = `UPDATE relationship_student_iom SET dump_link = "${linkInfo}" 
+                                               WHERE user_id = "${student_id}" AND iom_id = "${iom_id}"`
+                    req.db.execute(insertIntoRsiSql)
                     response.status(200, {message: 'Отчет сформирован!'}, res)
                 })
                 .catch((error) => {
@@ -265,6 +273,7 @@ exports.getStudentsForTutor = async(req,res) => {
 
         let studentsSql = `SELECT rsi.iom_id, DATE_FORMAT(rsi.date_finished_education, '%d.%m.%Y') as end_education,
                                          DATE_FORMAT(rsi.created_at, '%d.%m.%Y') as start_education,
+                                         rsi.dump_link,
                                          iom.title,s.user_id, s.name, s.surname, s.patronymic,
                                          school.school_name,area.title_area
                                          FROM relationship_student_iom as rsi
@@ -276,6 +285,7 @@ exports.getStudentsForTutor = async(req,res) => {
                                          AND rsi.status = 1`
 
         let [students] = await req.db.execute(studentsSql)
+
 
         if(!students) {
             response.status(201, [], res)

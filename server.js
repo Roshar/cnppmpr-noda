@@ -20,6 +20,7 @@ db.connect().then((dbh) => {
     app.use(cors())
     app.use(express.static(__dirname + '/uploads/avatar'))
     app.use(express.static(__dirname + '/uploads/answer'))
+    app.use(express.static(__dirname + '/uploads/report'))
     const routes = require('./settings/routes')
     routes(app)
     app.listen(PORT, ()=> {
