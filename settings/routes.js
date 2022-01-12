@@ -204,8 +204,6 @@ module.exports = (app) => {
     app.route('/api/finished/generationReportByStudentEducation').post(finishedCtrl.generationReportByStudentEducation)
 
 
-
-
     // get task by id
     app.route('/api/iom/getTask').post(iomCtrl.getTask)
     app.route('/api/iom/getDataById').post(iomCtrl.getDataById)
@@ -214,7 +212,7 @@ module.exports = (app) => {
     app.route('/api/iom/editTag').post(tagCtrl.editTag)
     app.route('/api/iom/addNew').post(tagCtrl.addNew)
     app.route('/api/iom/deleteTag').post(tagCtrl.deleteTag)
-    app.route('/api/iom/getMentor').post(mentorCtrl.getMentorData)
+    app.route('/api/iom/getMentorDataForTutor').post(mentorCtrl.getMentorDataForTutor)
     app.route('/api/iom/updateExercise').post(iomCtrl.updateExercise)
     app.route('/api/iom/deleteTask').post(iomCtrl.deleteTask)
     app.route('/api/iom/deleteIom').post(iomCtrl.deleteIom)
@@ -248,6 +246,12 @@ module.exports = (app) => {
 
     // getData
     app.route('/api/admin/getUserCount').post(adminCtrl.getUserCount)
+    app.route('/api/admin/getCountGender').post(adminCtrl.getCountGender)
+    app.route('/api/admin/addMentor').post(mentorCtrl.addMentor)
+    app.route('/api/admin/getMentors').post(mentorCtrl.getMentorData)
+    app.route('/api/admin/getMentorById').post(mentorCtrl.getMentorById)
+    app.route('/api/admin/editMentorData').post(mentorCtrl.editMentorData)
+    app.route('/api/admin/deleteMentor').post(mentorCtrl.deleteMentor)
     app.route('/api/admin/getExercisesByIomId').post(adminCtrl.getExercisesByIomId)
     app.route('/api/admin/getAllIomDataByTutorId').post(adminCtrl.getAllIomDataByTutorId)
     app.route('/api/admin/getDataFromIOM').post(adminCtrl.getDataFromIOM)

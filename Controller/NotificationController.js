@@ -22,13 +22,13 @@ exports.getAction = async(req,res) => {
     }
 }
 
+
 exports.getRequestPendingExercise = async(req,res) => {
     try {
         const token = req.body.token
         const id = await userId(req.db,token)
-        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
-
-        let countReq = `SELECT id  FROM ${tblCollection.report} WHERE accepted = 0 `
+        const tutor_id = id[0]['user_id']
+        let countReq = `SELECT id  FROM a_report WHERE accepted = 0 AND tutor_id = "${tutor_id}" `
         let [result] = await req.db.execute(countReq)
 
         if(!result.length) {

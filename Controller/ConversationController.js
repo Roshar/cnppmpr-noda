@@ -23,7 +23,6 @@ exports.send = async(req,res) => {
             //Возвращаем ID , если такая комната существует
             conId = check[0]['id']
         }
-
         //Добавляем сообщение в таблицу CONVERSATION_ROOM с указанимем полученного ID
         if(conId) {
             const sql = `INSERT INTO conversation_room (con_id, source_user, target_user, body, link)
@@ -39,7 +38,6 @@ exports.send = async(req,res) => {
         }else {
             response.status(201, {message:'Ошибка при отправке сообщения. Обратитесь к разработчикам'},res)
         }
-
     }catch (e) {
 
     }

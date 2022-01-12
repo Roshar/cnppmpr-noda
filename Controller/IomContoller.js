@@ -132,12 +132,12 @@ exports.addNewIom = async(req, res) => {
  */
 exports.addExercise = async(req, res) => {
     try {
-        let {title, description = '', link = '', mentor=0, tag, term, level, iomId, token } = req.body
+        let {title, description = '', link = '', author = 0, tag, term, level, iomId, token } = req.body
         term = term ? term : '1000-01-01'
         const tutor = await userId(req.db,token)
         const tutor_id = tutor[0]['user_id']
         const sql = `INSERT INTO a_exercise (iom_id, title, description, link, mentor, term, tag_id, iom_level_id, created_at, tutor_id) 
-                     VALUES ("${iomId}","${title}","${description}","${link}",${mentor},"${term}","${tag}",${level},now(),"${tutor_id}" )`
+                     VALUES ("${iomId}","${title}","${description}","${link}",${author},"${term}","${tag}",${level},now(),"${tutor_id}" )`
         let [result] = await req.db.execute(sql)
         if(!result.insertId) {
             response.status(400, {message:"Ошибка при добавлении элемента"},res)
@@ -620,6 +620,10 @@ exports.getTask = async(req, res) => {
                             t.description,
                             t.link,
                             t.mentor,
+                            m.name,
+                            m.lastname,
+                            m.patronymic,
+                            m.id as mentor_id,
                             tag.id_tag,
                             tag.title_tag,
                             level.title as level_title, level.id as level_id,
@@ -627,6 +631,7 @@ exports.getTask = async(req, res) => {
                             t.tag_id FROM a_exercise as t 
                             INNER JOIN tag ON t.tag_id = tag.id_tag 
                             INNER JOIN global_iom_levels as level ON t.iom_level_id = level.id
+                            LEFT OUTER JOIN a_mentor as m ON t.mentor = m.id
                             WHERE t.iom_id = "${iomId}" AND t.id_exercises = "${taskId}"`
         const [taskData] = await req.db.execute(taskSql)
 

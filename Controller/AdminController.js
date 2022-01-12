@@ -110,10 +110,14 @@ exports.getTask = async(req,res) => {
     }
 }
 
+/**
+ * получить количество слушателей/тьюторов
+ * ПРОФИЛЬ АДМИН
+ */
 exports.getUserCount = async(req,res) => {
     try {
-        const tblName = req.body.tbl
-        let sql = `SELECT COUNT(*) FROM ${tblName}`
+        const userRole = req.body.tbl
+        let sql = `SELECT COUNT(*) FROM users WHERE role = "${userRole}" AND status = "on"`
         let [sqlData] = await req.db.execute(sql)
         if(!sqlData.length) {
             response.status(201, {},res)
@@ -792,6 +796,22 @@ exports.liveSearchInputAndDis = async (req, res) => {
     }
 }
 
+
+exports.getCountGender = async(req, res) => {
+    const sql = `SELECT COUNT(s.gender) AS gender FROM students as s
+                 INNER JOIN users as u ON s.user_id = u.id_user WHERE u.status = 'on'
+                 GROUP BY s.gender`
+    const [result] = await req.db.execute(sql)
+
+    if(result.length) {
+        response.status(200, result,res)
+    }else {
+        response.status(201, [], res)
+    }
+
+}
+
+
 exports.getOptionFromStudents = async(req,res) => {
     try {
 
@@ -801,13 +821,11 @@ exports.getOptionFromStudents = async(req,res) => {
         const parameter = req.body.value.parameter
         let optionSql
         if(parameter == 'age'){
-            optionSql = `SELECT COUNT(id) as 'COUNT(${column})' FROM students 
-                         WHERE TIMESTAMPDIFF(YEAR, birthday, CURDATE())  >= ${value.start} 
-                         AND TIMESTAMPDIFF(YEAR, birthday, CURDATE())  < ${value.end}`
-        }else if(parameter == 'number') {
-            optionSql = `SELECT COUNT(${column}) FROM ${tbl} WHERE ${column} = ${value}`;
-        }else if(parameter == 'string') {
-            optionSql = `SELECT COUNT(${column}) FROM ${tbl} WHERE ${column} = "${value}"`
+            optionSql = `SELECT COUNT(s.id) as 'COUNT(${column})' FROM students  as s
+                         INNER JOIN users as u ON s.user_id = u.id_user
+                         WHERE TIMESTAMPDIFF(YEAR, s.birthday, CURDATE())  >= ${value.start} 
+                         AND TIMESTAMPDIFF(YEAR, s.birthday, CURDATE())  < ${value.end} 
+                         AND u.status = 'on'`
         }else if(parameter == 'none') {
             optionSql = `SELECT COUNT(${column}) FROM ${tbl}`
         }
@@ -835,7 +853,9 @@ exports.getAreasStatisticsByStudent = async(req,res) => {
 
         const sql = `SELECT s.area_id,a.title_area, COUNT(s.id) AS area FROM students as s
                      INNER JOIN area as a ON s.area_id = a.id_area
+                     INNER JOIN users as u ON s.user_id = u.id_user WHERE u.status = 'on'
                      GROUP BY s.area_id`
+
         let [optionData] = await req.db.execute(sql)
         if(!optionData.length) {
             response.status(201, [],res)
@@ -853,11 +873,14 @@ exports.getAreasStatisticsByStudent = async(req,res) => {
  * получить группами кол-во слушателей по предметно
  * ПРОФИЛЬ АДМИН
  */
+
 exports.getDisciplineStatisticsByStudentOrTutor = async(req,res) => {
     try {
         const tbl = req.body.tbl
-        const sql = `SELECT s.discipline_id,d.title_discipline, COUNT(s.id) AS dis FROM ${tbl} as s
-                     INNER JOIN discipline as d ON s.discipline_id = d.id_dis
+        const sql = `SELECT s.discipline_id, d.title_discipline, COUNT(s.id) AS dis FROM ${tbl} as s
+                     INNER JOIN discipline as d ON s.discipline_id = d.id_dis 
+                     INNER JOIN users as u ON s.user_id = u.id_user
+                     WHERE u.status = 'on'
                      GROUP BY s.discipline_id`
         let [optionData] = await req.db.execute(sql)
         if(!optionData.length) {
@@ -1081,6 +1104,8 @@ exports.addUserInGroupAndTutor = async(req, res) => {
     }
 }
 
+
+
 exports.getGroups = async(req,res) => {
     try {
         let sql = `SELECT g.id, g.title, g.description, DATE_FORMAT(g.created_at, '%d.%m.%Y %H:%i') as created_at, gr.tutor_id, t.name, t.surname, t.patronymic, d.title_discipline
@@ -1100,6 +1125,7 @@ exports.getGroups = async(req,res) => {
 
     }
 }
+
 
 exports.getGroupById =  async(req,res) => {
     try {
