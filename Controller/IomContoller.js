@@ -132,6 +132,7 @@ exports.addNewIom = async(req, res) => {
  */
 exports.addExercise = async(req, res) => {
     try {
+        console.log(req.body)
         let {title, description = '', link = '', author = 0, tag, term, level, iomId, token } = req.body
         term = term ? term : '1000-01-01'
         const tutor = await userId(req.db,token)

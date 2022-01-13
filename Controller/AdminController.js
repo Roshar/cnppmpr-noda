@@ -195,7 +195,7 @@ exports.getUsersActive = async (req, res) => {
                 INNER JOIN area as a ON t.area_id = a.id_area
                 INNER JOIN schools as s ON t.school_id = s.id_school
                 INNER JOIN discipline as d ON t.discipline_id = d.id_dis
-                INNER JOIN users as u ON t.user_id = u.id_user WHERE u.status = 'on'`
+                INNER JOIN users as u ON t.user_id = u.id_user WHERE u.status = 'on' ORDER BY t.surname ASC `
         } else if(tblName === 'tutors') {
             sql =
                 `SELECT 
@@ -1359,34 +1359,38 @@ exports.getFreeStudentsByDisciplineId = async(req, res) => {
             s.gender FROM students as s 
             INNER JOIN area as a ON s.area_id = a.id_area
             INNER JOIN schools as sch ON s.school_id = sch.id_school
+            INNER JOIN users as u ON s.user_id = u.id_user
             WHERE s.user_id NOT IN (SELECT s_user_id FROM relationship_tutor_student) 
             AND s.discipline_id = ${disciplineId}
-            AND s.area_id = ${areaId}`
+            AND s.area_id = ${areaId} AND u.status = 'on' ORDER BY s.surname ASC `
         }else if(areaId == '0' && gender) {
             sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, s.area_id, a.title_area, sch.school_name,
             s.gender FROM students as s 
             INNER JOIN area as a ON s.area_id = a.id_area
             INNER JOIN schools as sch ON s.school_id = sch.id_school
+            INNER JOIN users as u ON s.user_id = u.id_user
             WHERE s.user_id NOT IN (SELECT s_user_id FROM relationship_tutor_student) 
             AND s.discipline_id = ${disciplineId}
-            AND s.gender = "${gender}"`
+            AND s.gender = "${gender}" AND  u.status = 'on' ORDER BY s.surname ASC`
         }else if(areaId && gender) {
             sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, s.area_id, a.title_area, sch.school_name,
             s.gender FROM students as s 
             INNER JOIN area as a ON s.area_id = a.id_area
             INNER JOIN schools as sch ON s.school_id = sch.id_school
+            INNER JOIN users as u ON s.user_id = u.id_user
             WHERE s.user_id NOT IN (SELECT s_user_id FROM relationship_tutor_student) 
             AND s.discipline_id = ${disciplineId}
             AND s.gender = "${gender}"
-            AND s.area_id = ${areaId}`
+            AND s.area_id = ${areaId} AND u.status = 'on' ORDER BY s.surname ASC`
         }
         else {
             sql = `SELECT s.user_id, s.name, s.surname,s.patronymic, s.area_id, a.title_area, sch.school_name,
             s.gender FROM students as s 
             INNER JOIN area as a ON s.area_id = a.id_area
             INNER JOIN schools as sch ON s.school_id = sch.id_school
+            INNER JOIN users as u ON s.user_id = u.id_user
             WHERE s.user_id NOT IN (SELECT s_user_id FROM relationship_tutor_student) 
-            AND s.discipline_id = ${disciplineId}`
+            AND s.discipline_id = ${disciplineId} AND u.status = 'on' ORDER BY s.surname ASC`
         }
         const [sqlData] = await req.db.execute(sql)
         if(!sqlData.length) {
