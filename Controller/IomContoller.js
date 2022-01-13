@@ -510,6 +510,7 @@ exports.getStudentAnswer = async(req, res) => {
             AND report.exercises_id = ${exId}`
 
         const [taskData] = await req.db.execute(sql)
+        console.log(taskData)
 
         if(!taskData.length) {
             response.status(201, [],res)

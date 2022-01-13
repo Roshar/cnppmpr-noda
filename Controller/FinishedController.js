@@ -247,7 +247,7 @@ exports.generationReportByStudentEducation = async(req,res) => {
             await pdf
                 .create(document, options)
                 .then((result) => {
-                    let position = result['filename'].search("uploads");
+                    let position = result['filename'].search(dd.getFullYear());
                     let linkInfo = result['filename'].substr(position);
                     const insertIntoRsiSql = `UPDATE relationship_student_iom SET dump_link = "${linkInfo}" 
                                                WHERE user_id = "${student_id}" AND iom_id = "${iom_id}"`
