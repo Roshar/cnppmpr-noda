@@ -17,7 +17,8 @@ const getTerm = require('./../use/getTerm')
 
 exports.studentEducation = async(req,res) => {
     try {
-        const {iomId, token, tutorId, recall, mark} = req.body
+
+        const {iomId, token, tutorId, recall_, mark} = req.body
         const student = await userId(req.db,token)
         const studentId = student[0]['user_id'];
 
@@ -43,7 +44,8 @@ exports.studentEducation = async(req,res) => {
 
 
             const recallSql = `INSERT INTO global_recall (student_id, tutor_id,iom_id, mark, comment)
-                           VALUES ("${studentId}","${tutorId}","${iomId}", ${mark}, "${recall}" )`
+                           VALUES ("${studentId}","${tutorId}","${iomId}", ${mark}, "${recall_}" )`
+
 
             const addInHistoryTblSql = `INSERT INTO global_history_education_rows (tutor_id, student_id,iom_id, iom_title)
                            VALUES ("${tutorId}","${studentId}","${iomId}", "${getCountExercisesByIOM[0]['title']}")`
@@ -61,7 +63,7 @@ exports.studentEducation = async(req,res) => {
         }
 
     }catch (e) {
-
+        console.log(e.message)
     }
 }
 
