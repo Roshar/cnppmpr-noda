@@ -64,9 +64,11 @@ exports.cancelRequest = async(req,res) => {
 
 exports.getRequestStudents = async(req,res) => {
     try {
-
         let countReq = `SELECT COUNT(*) as id  FROM users WHERE role = "student" AND status IS NULL`
+        let testSql = `SELECT * FROM users  WHERE role = "student" AND status IS NULL`
         let [result] = await req.db.execute(countReq)
+        let [test] = await req.db.execute(testSql)
+        console.log(test)
         console.log(result)
         if(!result.length) {
             response.status(201, {},res)

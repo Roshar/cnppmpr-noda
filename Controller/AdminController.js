@@ -919,6 +919,7 @@ exports.getFinishedStudentsByYear = async(req,res) => {
 
 /**
  * получить статистку ИОМов по предметам
+ *
  */
 exports.getIomStatistic = async(req,res) => {
     try {
