@@ -1,9 +1,10 @@
 .DS_Store
 node_modules
+uploads
 /dist
 #.dbenv.js
 /settings/db.js
-/uploads/answer
+/uploads/
 /settings
 
 
@@ -26,3 +27,6 @@ pnpm-debug.log*
 *.sln
 *.sw?
 /node_modules/
+
+
+

@@ -8,10 +8,10 @@ module.exports = (app) => {
     const storage = multer.diskStorage({
         destination: function (req, file, cb) {
 
-            console.log('destination')
-            console.log(file)
-            console.log(req.body)
-            console.log('destinationEnd')
+            // console.log('destination')
+            // console.log(file)
+            // console.log(req.body)
+            // console.log('destinationEnd')
             if(file.fieldname === 'file') {
                 cb(null, 'uploads/avatar')
             }else if(file.fieldname === 'answer') {
