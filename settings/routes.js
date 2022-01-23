@@ -97,6 +97,7 @@ module.exports = (app) => {
     const globalLib = require('../Controller/GlobalLibraryController')
     const studentCtrl = require('../Controller/StudentController')
     const finishedCtrl = require('../Controller/FinishedController')
+    const learningCtrl = require('../Controller/LearningProcessController')
 
     // get all users from tbl user
     // app.route('/api/users').get(usersCtrl.getAllUsers)
@@ -240,6 +241,10 @@ module.exports = (app) => {
     app.route('/api/conversation/searchUser').post(conCtrl.searchUser)
     app.route('/api/conversation/createConversationWithoutInsert').post(conCtrl.createConversationWithoutInsert)
     //app.route('/api/conversation/getUsersForConversation').post(conCtrl.getUsersForConversation)
+
+
+    //LEARNING PROCESS
+    // app.route('/api/learning_process/getLearningIOM').post(learningCtrl.getLearningIOM)
 
 
     // ADMIN

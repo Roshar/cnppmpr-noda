@@ -684,7 +684,8 @@ exports.liveSearchInput = async (req, res) => {
 
 exports.getTutorAndCheckAtFree = async(req, res) => {
     try {
-        let sql = `SELECT user_id, name, surname,patronymic, discipline_id FROM tutors WHERE user_id NOT IN (SELECT tutor_id FROM groups_relationship)`
+        let sql = `SELECT user_id, name, surname,patronymic, discipline_id FROM tutors WHERE user_id 
+                   NOT IN (SELECT tutor_id FROM groups_relationship)`
         let [sqlData] = await req.db.execute(sql)
         if(!sqlData.length) {
             response.status(201, {},res)

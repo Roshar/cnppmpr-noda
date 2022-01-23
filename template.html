@@ -5,6 +5,9 @@
     <title>Отчет итоговый</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
 </head>
+<style>
+    div.alwaysbreak { page-break-before: always; }
+</style>
 <body>
 <h3>Индивидуальный образовательный маршрут: {{iom.title}}</h3>
 
@@ -62,6 +65,7 @@
     </tr>
     </tbody>
 </table>
+<div class="alwaysbreak" style="page-break-before: always;"></div>
 <h4>4.Карта профессионального развития</h4>
 <table class="table"  style="width: 297mm">
     <thead>
@@ -89,30 +93,25 @@
     {{/each}}
     </tbody>
 </table>
+<div class="alwaysbreak" style="page-break-before: always;"></div>
 
 <h4>5.Отчет слушателя о проделанной работе по карте профессионального развития</h4>
 <table class="table"  style="width: 297mm">
     <thead>
-    <tr>
-        <th scope="col">Уровни реализации ИОМ</th>
-        <th scope="col">Сопровождение (наставник/тьютор)</th>
-        <th scope="col">Мероприятия, направленные на устранение выявленных дефицитов</th>
-        <th scope="col">Категория</th>
-        <th scope="col">Отчет</th>
-    </tr>
+        <tr>
+            <th scope="col">№ п/п</th>
+            <th scope="col">Мероприятия, направленные на устранение выявленных дефицитов</th>
+            <th scope="col">Текстовое содержание отчета</th>
+            <th scope="col">Ссылка на отчет</th>
+        </tr>
     </thead>
     <tbody>
-    {{#each exercises}}
+    {{#each reports}}
     <tr>
-        <td> {{this.level_title}}</td>
-        <td>{{#if this.mentor}}
-            Наставник
-            {{else}}
-            Тьютор
-            {{/if}}</td>
+        <td> {{increaseIndex @index}}</td>
         <td> {{this.title}}</td>
-        <td> {{this.title_tag}}</td>
-        <td> </td>
+        <td> {{{this.content}}}</td>
+        <td><a href="{{filterLink this.link}}"> {{filterLink this.link}}</a></td>
     </tr>
     {{/each}}
     </tbody>

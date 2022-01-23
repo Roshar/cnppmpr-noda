@@ -193,8 +193,13 @@ exports.generationReportByStudentEducation = async(req,res) => {
         INNER JOIN global_iom_levels as level ON t.iom_level_id = level.id  
         WHERE t.iom_id = "${iom_id}" ORDER BY level.id ASC`
 
-        const [exerciseData] = await req.db.execute(exerciseSql)
+        const reportsSql = `SELECT r.content, r.link, e.title FROM a_report as r 
+                            INNER JOIN a_exercise as e ON r.exercises_id = e.id_exercises
+                            WHERE r.iom_id = "${iom_id}" AND r.student_id = "${student_id}"`
 
+        const [reports] = await req.db.execute(reportsSql)
+
+        const [exerciseData] = await req.db.execute(exerciseSql)
 
         if(exerciseData.length) {
             let arr = [];
@@ -216,11 +221,11 @@ exports.generationReportByStudentEducation = async(req,res) => {
                 orientation: "landscape",
                 border: "10mm",
                 header: {
-                    height: "45mm",
+                    height: "15mm",
                     contents: '<div style="text-align: center;"></div>'
                 },
                 footer: {
-                    height: "28mm",
+                    height: "30mm",
                     contents: {
                         first: '',
                         // 2: 'Second page', // Any page number is working. 1-based index
@@ -235,6 +240,8 @@ exports.generationReportByStudentEducation = async(req,res) => {
                 html: html,
                 data: {
                     exercises: exerciseData,
+                    numeric_data: 1,
+                    reports: reports,
                     student: studentInfo[0],
                     tutor: tutorInfo[0],
                     iom: iomInfo[0],

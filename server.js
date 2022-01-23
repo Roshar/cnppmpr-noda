@@ -2,13 +2,14 @@ const express = require('express')
 const cors = require('cors')
 const PORT = process.env.PORT || 8088
 const db = require('./settings/db')
+require('./settings/helper')
 
-
-
+// предварительно прверяем DB соединение
 db.connect().then((dbh) => {
     const app = express()
     app.use((req, res, next) => {
             req.db = dbh;
+            // TODO изменить на более эффективный способ
         setInterval(async() => {
             const sql = `SELECT 1`
             const [rows] = await req.db.execute(sql)
@@ -19,7 +20,6 @@ db.connect().then((dbh) => {
     app.use(express.urlencoded({limit: '50mb',extended:true}))
     app.use(cors())
     app.use(express.static(__dirname + '/uploads/avatar'))
-    app.use(express.static(__dirname + '/uploads/answer'))
     app.use(express.static(__dirname + '/uploads/report'))
     const routes = require('./settings/routes')
     routes(app)

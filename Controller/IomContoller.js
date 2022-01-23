@@ -43,13 +43,23 @@ exports.getData = async(req, res) => {
         let exerciseCountSql = [];
         const [iomData] = await req.db.execute(iomSql)
         let countExercises = [];
+        let countMembers = [];
+        let countMembersSql = [];
+
         if(iomData.length) {
             for(let i = 0; i < iomData.length; i++){
                 exerciseCountSql.push(`SELECT COUNT(*)  FROM a_exercise WHERE iom_id = "${iomData[i]['iom_id']}"`)
+                countMembersSql.push(`SELECT COUNT(*) as members FROM relationship_student_iom 
+                                        WHERE iom_id = "${iomData[i]['iom_id']}" 
+                                        AND tutor_id = "${tutorId}"`)
+                countMembers.push((await req.db.execute(countMembersSql[i]))[0])
                 countExercises.push((await req.db.execute(exerciseCountSql[i]))[0])
                 iomData[i].countExercises = countExercises[i][0]['COUNT(*)']
+                iomData[i]['countMembers'] = countMembers[i][0]['members']
             }
         }
+
+
         if(!iomData.length) {
             response.status(200, [],res)
         }else {
@@ -498,7 +508,6 @@ exports.getStudentAnswer = async(req, res) => {
                             report.accepted,
                             report.tutor_comment,
                             report.content as answer_content,
-                            report.file_path,
                             report.link as answer_link
             FROM a_report as report
             INNER JOIN  a_exercise as t ON report.exercises_id = t.id_exercises
@@ -510,7 +519,7 @@ exports.getStudentAnswer = async(req, res) => {
             AND report.exercises_id = ${exId}`
 
         const [taskData] = await req.db.execute(sql)
-        console.log(taskData)
+
 
         if(!taskData.length) {
             response.status(201, [],res)
