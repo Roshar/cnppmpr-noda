@@ -155,6 +155,7 @@ module.exports = (app) => {
     app.route('/api/iom/successTask').post(iomCtrl.successTask)
     app.route('/api/iom/correctionTask').post(iomCtrl.correctionTask)
     app.route('/api/iom/getPendingDataOrFinished').post(iomCtrl.getPendingDataOrFinished)
+    app.route('/api/iom/getPendingDataOrFinishedByIomId').post(iomCtrl.getPendingDataOrFinishedByIomId)
     app.route('/api/iom/getStatusFinished').post(iomCtrl.getStatusFinished)
     app.route('/api/iom/getStatusToPendingFinish').post(iomCtrl.getStatusToPendingFinish)
     // app.route('/api/iom/downloadFile').post(iomCtrl.downloadFile)
@@ -178,6 +179,7 @@ module.exports = (app) => {
     app.route('/api/student/addStudentInCurrentIom').post(studentCtrl.addStudentInCurrentIom)
     app.route('/api/student/deleteStudentFromIomEducation').post(studentCtrl.deleteStudentFromIomEducation)
     app.route('/api/student/getUsersFromIomEducation').post(studentCtrl.getUsersFromIomEducation)
+    app.route('/api/student/getUsersFinishedIom').post(studentCtrl.getUsersFinishedIom)
     app.route('/api/student/getStudentsForTutorWithGender').post(studentCtrl.getStudentsForTutorWithGender)
     app.route('/api/student/getStudentsForTutorWithArea').post(studentCtrl.getStudentsForTutorWithArea)
     app.route('/api/student/getStudentsForTutorWithIom').post(studentCtrl.getStudentsForTutorWithIom)
@@ -203,6 +205,8 @@ module.exports = (app) => {
     app.route('/api/finished/getFinishedCourses').post(finishedCtrl.getFinishedCourses)
     app.route('/api/finished/getStudentsForTutor').post(finishedCtrl.getStudentsForTutor)
     app.route('/api/finished/generationReportByStudentEducation').post(finishedCtrl.generationReportByStudentEducation)
+    app.route('/api/finished/setStatusFinishedIom').post(finishedCtrl.setStatusFinishedIom)
+    app.route('/api/finished/getStudentsForTutorByIomId').post(finishedCtrl.getStudentsForTutorByIomId)
 
 
     // get task by id
@@ -227,7 +231,8 @@ module.exports = (app) => {
 
     //NOTIFICATION
 
-    app.route('/api/notification/getAction').post(notificationCtrl.getAction)
+    app.route('/api/notification/getNotificationAction').post(notificationCtrl.getNotificationAction)
+    app.route('/api/notification/getNotificationEnd').post(notificationCtrl.getNotificationEnd)
     app.route('/api/notification/getRequestPendingExercise').post(notificationCtrl.getRequestPendingExercise)
     app.route('/api/notification/getRequestStudents').post(notificationCtrl.getRequestStudents)
     app.route('/api/notification/getRequestTutors').post(notificationCtrl.getRequestTutors)
@@ -283,6 +288,8 @@ module.exports = (app) => {
     app.route('/api/admin/deleteInGroup').post(adminCtrl.deleteInGroup)
     app.route('/api/admin/addUserInGroupAndTutor').post(adminCtrl.addUserInGroupAndTutor)
     app.route('/api/admin/getGroupById').post(adminCtrl.getGroupById)
+    app.route('/api/admin/getIomByTutorId').post(adminCtrl.getIomByTutorId)
+    app.route('/api/admin/getFinishedStudentsCountByTutor').post(adminCtrl.getFinishedStudentsCountByTutor)
     app.route('/api/admin/getHistoryInfoIOM').post(adminCtrl.getHistoryInfoIOM)
     app.route('/api/admin/getAreasStatisticsByStudent').post(adminCtrl.getAreasStatisticsByStudent)
     app.route('/api/admin/getIomStatistic').post(adminCtrl.getIomStatistic)
@@ -296,6 +303,9 @@ module.exports = (app) => {
     app.route('/api/admin/liveSearchInputAndAreaAndDis').post(adminCtrl.liveSearchInputAndAreaAndDis)
     app.route('/api/admin/liveSearchInputAndDis').post(adminCtrl.liveSearchInputAndDis)
     app.route('/api/admin/getOptionFromStudents').post(adminCtrl.getOptionFromStudents)
+    app.route('/api/finished/getStudentsForAdminByIomId').post(finishedCtrl.getStudentsForAdminByIomId)
+
+
 
     // GLOBAL LIBRARY
     app.route('/api/admin/globalLibrary/getData').post(globalLib.getData)

@@ -1,17 +1,42 @@
 'use strict'
 const response = require('./../response')
-const DB = require('./../settings/db')
-const tblMethod = require('./../use/tutorTblCollection')
 const userId = require('./../use/getUserId')
 
-exports.getAction = async(req,res) => {
-    try {
+/**
+ * Уведомление о запросе на удаления ИОМа
+ * ПРОФИЛЬ АДМИНА
+ */
 
+exports.getNotificationAction = async(req,res) => {
+    try {
         let countReq = `SELECT * FROM permission_to_delete_iom`
         let [result] = await req.db.execute(countReq)
 
         if(!result.length) {
-            response.status(201, {},res)
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                result,res)
+            return true
+        }
+    }catch (e) {
+
+    }
+}
+
+/**
+ *  Уведомление о завершении
+ * ПРОФИЛЬ АДМИНА
+ */
+
+exports.getNotificationEnd = async(req,res) => {
+    try {
+        let countReq = `SELECT group_id FROM permission_to_finished_education`
+
+        let [result] = await req.db.execute(countReq)
+
+        if(!result.length) {
+            response.status(201, [],res)
         }else {
             response.status(200,
                 result,res)
@@ -68,8 +93,7 @@ exports.getRequestStudents = async(req,res) => {
         let testSql = `SELECT * FROM users  WHERE role = "student" AND status IS NULL`
         let [result] = await req.db.execute(countReq)
         let [test] = await req.db.execute(testSql)
-        console.log(test)
-        console.log(result)
+
         if(!result.length) {
             response.status(201, {},res)
         }else {
@@ -87,7 +111,7 @@ exports.getRequestTutors = async(req,res) => {
 
         let countReq = `SELECT COUNT(*) as id  FROM users WHERE role = 'tutor' AND status IS NULL`
         let [result] = await req.db.execute(countReq)
-        console.log(result)
+
         if(!result.length) {
             response.status(201, [],res)
         }else {

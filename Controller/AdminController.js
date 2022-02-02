@@ -17,6 +17,7 @@ exports.getAllIomDataByTutorId = async(req,res) => {
         let exerciseCountSql = [];
         const [iomData] = await req.db.execute(iomSql)
         let countExercises = [];
+
         if(iomData.length) {
             for(let i = 0; i < iomData.length; i++){
                 exerciseCountSql.push(`SELECT COUNT(*)  FROM a_exercise WHERE iom_id = "${iomData[i]['iom_id']}"`)
@@ -24,6 +25,7 @@ exports.getAllIomDataByTutorId = async(req,res) => {
                 iomData[i].countExercises = countExercises[i][0]['COUNT(*)']
             }
         }
+
         if(!iomData.length) {
             response.status(200, [],res)
         }else {
@@ -79,6 +81,7 @@ exports.getDataFromIOM = async(req,res) => {
  * получить задание (мероприятие)
  * профиль АДМИН
  */
+
 exports.getTask = async(req,res) => {
     try {
         const iomId = req.body.iomId
@@ -681,7 +684,6 @@ exports.liveSearchInput = async (req, res) => {
 }
 
 
-
 exports.getTutorAndCheckAtFree = async(req, res) => {
     try {
         let sql = `SELECT user_id, name, surname,patronymic, discipline_id FROM tutors WHERE user_id 
@@ -1107,14 +1109,41 @@ exports.addUserInGroupAndTutor = async(req, res) => {
 }
 
 
+// TODO дописать множественный выбор (совместная работа двух фильтров)
 
 exports.getGroups = async(req,res) => {
     try {
-        let sql = `SELECT g.id, g.title, g.description, DATE_FORMAT(g.created_at, '%d.%m.%Y %H:%i') as created_at, gr.tutor_id, t.name, t.surname, t.patronymic, d.title_discipline
+        let sql;
+        const {disId = null, groupStatusId = null } = req.body
+        if(disId && !groupStatusId){
+            sql = `SELECT g.id, g.title, g.description, g.status, DATE_FORMAT(g.created_at, '%d.%m.%Y %H:%i') as created_at, gr.tutor_id, t.name, t.surname, t.patronymic, d.title_discipline
+                   FROM groups_ as g 
+                   INNER JOIN groups_relationship as gr ON g.id = gr.group_id
+                   INNER JOIN tutors as t ON gr.tutor_id = t.user_id
+                   INNER JOIN discipline as d ON t.discipline_id = d.id_dis WHERE t.discipline_id = ${disId}`
+        }else if(groupStatusId && !disId){
+            sql = `SELECT g.id, g.title, g.description, g.status, DATE_FORMAT(g.created_at, '%d.%m.%Y %H:%i') as created_at, gr.tutor_id, t.name, t.surname, t.patronymic, d.title_discipline
+                   FROM groups_ as g 
+                   INNER JOIN groups_relationship as gr ON g.id = gr.group_id
+                   INNER JOIN tutors as t ON gr.tutor_id = t.user_id
+                   INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                   WHERE g.status = ${groupStatusId}`
+        } else if(groupStatusId && disId) {
+            sql = `SELECT g.id, g.title, g.description, g.status, DATE_FORMAT(g.created_at, '%d.%m.%Y %H:%i') as created_at, gr.tutor_id, t.name, t.surname, t.patronymic, d.title_discipline
+                   FROM groups_ as g 
+                   INNER JOIN groups_relationship as gr ON g.id = gr.group_id
+                   INNER JOIN tutors as t ON gr.tutor_id = t.user_id
+                   INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                   INNER JOIN discipline as d ON t.discipline_id = d.id_dis
+                    WHERE t.discipline_id = ${disId} AND g.status = ${groupStatusId}`
+        }else {
+            sql = `SELECT g.id, g.title, g.description, g.status, DATE_FORMAT(g.created_at, '%d.%m.%Y %H:%i') as created_at, gr.tutor_id, t.name, t.surname, t.patronymic, d.title_discipline
                    FROM groups_ as g 
                    INNER JOIN groups_relationship as gr ON g.id = gr.group_id
                    INNER JOIN tutors as t ON gr.tutor_id = t.user_id
                    INNER JOIN discipline as d ON t.discipline_id = d.id_dis`
+        }
+
         const [sqlData] = await req.db.execute(sql)
         if(!sqlData.length) {
             response.status(201, {},res)
@@ -1149,6 +1178,56 @@ exports.getGroupById =  async(req,res) => {
 
     }
 }
+
+
+/**
+ * получить количество иомов по id тьютора
+ * ПРОФИЛЬ АДМИНА
+ */
+
+exports.getIomByTutorId =  async(req,res) => {
+    try {
+        const tutorId = req.body.tutorId
+        let sql = `SELECT COUNT(id) as id FROM a_iom  WHERE tutor_id = "${tutorId}" `
+        const [sqlData] = await req.db.execute(sql)
+
+        if (!sqlData.length) {
+            response.status(201, [], res)
+        } else {
+            response.status(200,
+                sqlData[0], res)
+            return true
+        }
+    } catch (e) {
+
+    }
+}
+
+/**
+ *
+ * получить количество слушателей завершивших обучения (привязанных к тьютору)
+ * ПРОФИЛЬ АДМИНА
+ */
+
+exports.getFinishedStudentsCountByTutor =  async(req,res) => {
+    try {
+        console.log('dfdf')
+        const tutorId = req.body.tutorId
+        let sql = `SELECT COUNT(id) as id FROM relationship_student_iom  WHERE tutor_id = "${tutorId}" AND status = 1 `
+        const [sqlData] = await req.db.execute(sql)
+        console.log(sqlData)
+        if (!sqlData.length) {
+            response.status(201, [], res)
+        } else {
+            response.status(200,
+                sqlData, res)
+            return true
+        }
+    } catch (e) {
+
+    }
+}
+
 
 /**
  *  Выборка слушателей которые добавлены к тьютору (в группу тьютора)

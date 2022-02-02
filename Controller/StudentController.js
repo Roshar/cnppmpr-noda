@@ -290,6 +290,33 @@ exports.getUsersFromIomEducation = async(req, res) => {
     }
 }
 
+/**
+ * получить количество завершивших текущий ИОМ (для проверки готовности отправить статус о  завершении обучении учащихся по текущему ИОМу)
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
+exports.getUsersFinishedIom = async(req, res) => {
+    try {
+        const {iomId } = req.body
+
+        const sql = `SELECT COUNT(*) as finishedCount
+                      FROM relationship_student_iom as rsi WHERE iom_id = "${iomId}" AND status = 1`
+
+        const [students] = await req.db.execute(sql)
+
+
+        if(students.length <= 0) {
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                students[0]['finishedCount'],res)
+            return true
+        }
+
+    }catch (e) {
+        console.log(e.message)
+    }
+}
+
 
 /**
  * отписать пользователя от ИОМа

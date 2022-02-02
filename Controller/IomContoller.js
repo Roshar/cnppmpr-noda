@@ -142,7 +142,7 @@ exports.addNewIom = async(req, res) => {
  */
 exports.addExercise = async(req, res) => {
     try {
-        console.log(req.body)
+
         let {title, description = '', link = '', author = 0, tag, term, level, iomId, token } = req.body
         term = term ? term : '1000-01-01'
         const tutor = await userId(req.db,token)
@@ -472,6 +472,85 @@ exports.getPendingDataOrFinished = async(req, res) => {
                 exerciseData,res)
             return true
         }
+    }catch (e) {
+        return e
+    }
+}
+
+/**
+ * получить задания в режимах (по id ИОМа):
+ *  - завершенные
+ *  - в ожидании
+ *  status параметр имеет указание на проверке или завершенные 0 или 1
+ *  (по умолчанию в таблицу a_report - попадает запись в случае, если слушатель отправил ответ,
+ *  соответственно, если нет 1 значит на проверке)
+ *  ПРОФИЛЬ ТЬЮТОРА
+ */
+exports.getPendingDataOrFinishedByIomId = async(req, res) => {
+    try {
+        const {status,iomId, student} = req.body
+        let exerciseSql;
+
+        if(!student) {
+            exerciseSql = `SELECT 
+                        t.id_exercises,
+                        t.iom_id, 
+                        t.title,
+                        t.description,
+                        t.link,
+                        t.mentor,
+                        tag.id_tag,
+                        tag.title_tag,
+                        iom.title as iom_title,
+                        s.name,
+                        s.surname,
+                        s.patronymic,
+                        s.user_id,
+                        DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                        t.tag_id,
+                        report.accepted
+            FROM a_report as report  
+            INNER JOIN a_exercise as t ON report.exercises_id = t.id_exercises 
+            INNER JOIN a_iom as iom ON t.iom_id = iom.iom_id 
+            INNER JOIN students as s ON report.student_id = s.user_id 
+            INNER JOIN tag ON t.tag_id = tag.id_tag
+            WHERE report.accepted = ${status} AND report.iom_id = "${iomId}"`
+        }else {
+
+            exerciseSql = `SELECT 
+                        t.id_exercises,
+                        t.iom_id, 
+                        t.title,
+                        t.description,
+                        t.link,
+                        t.mentor,
+                        tag.id_tag,
+                        tag.title_tag,
+                        iom.title as iom_title,
+                        s.name,
+                        s.surname,
+                        s.patronymic,
+                        s.user_id,
+                        DATE_FORMAT(t.term, '%d.%m.%Y') as term,
+                        t.tag_id,
+                        report.accepted
+            FROM a_report as report  
+            INNER JOIN a_exercise as t ON report.exercises_id = t.id_exercises 
+            INNER JOIN a_iom as iom ON t.iom_id = iom.iom_id 
+            INNER JOIN students as s ON report.student_id = s.user_id 
+            INNER JOIN tag ON t.tag_id = tag.id_tag
+            WHERE report.accepted = ${status} AND report.iom_id = "${iomId}" AND student_id = "${student}"`
+        }
+        const [exerciseData] = await req.db.execute(exerciseSql)
+        if(!exerciseData.length) {
+            response.status(201, [],res)
+        }else {
+            response.status(200,
+                exerciseData,res)
+            return true
+        }
+
+
     }catch (e) {
         return e
     }

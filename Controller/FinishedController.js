@@ -288,7 +288,7 @@ exports.getStudentsForTutor = async(req,res) => {
                                          FROM relationship_student_iom as rsi
                                          INNER JOIN a_iom as iom ON rsi.iom_id = iom.iom_id
                                          INNER JOIN students as s ON rsi.user_id = s.user_id
-                                         INNER JOIN area ON s.area_id = area.id_area 
+                                         INNER JOIN area ON s.area_id = area.id_area
                                          INNER JOIN schools as school ON s.school_id = school.id_school
                                          WHERE rsi.tutor_id = "${tutorId}"
                                          AND rsi.status = 1`
@@ -304,6 +304,135 @@ exports.getStudentsForTutor = async(req,res) => {
 
     }catch (e) {
 
+    }
+}
+
+
+/**
+ * получить всех слушателей, завершивших обучения
+ * iomId - служит для выборки по опредленному ИОМу. По умолчанию выборка по всем ИОМам
+ * профиль АДМИНА
+ */
+
+exports.getStudentsForAdminByIomId = async(req,res) => {
+    try {
+        const {tutorId, iomId = null} = req.body
+        let studentsSql;
+        if(iomId) {
+            studentsSql = `SELECT rsi.iom_id, DATE_FORMAT(rsi.date_finished_education, '%d.%m.%Y') as end_education,
+                                         DATE_FORMAT(rsi.created_at, '%d.%m.%Y') as start_education,
+                                         rsi.dump_link,
+                                         iom.title,s.user_id, s.name, s.surname, s.patronymic,
+                                         school.school_name,area.title_area
+                                         FROM relationship_student_iom as rsi
+                                         INNER JOIN a_iom as iom ON rsi.iom_id = iom.iom_id
+                                         INNER JOIN students as s ON rsi.user_id = s.user_id
+                                         INNER JOIN area ON s.area_id = area.id_area
+                                         INNER JOIN schools as school ON s.school_id = school.id_school
+                                         WHERE rsi.tutor_id = "${tutorId}"
+                                         AND rsi.status = 1 AND rsi.iom_id = "${iomId}"`
+        }else {
+            studentsSql = `SELECT rsi.iom_id, DATE_FORMAT(rsi.date_finished_education, '%d.%m.%Y') as end_education,
+                                         DATE_FORMAT(rsi.created_at, '%d.%m.%Y') as start_education,
+                                         rsi.dump_link,
+                                         iom.title,s.user_id, s.name, s.surname, s.patronymic,
+                                         school.school_name,area.title_area
+                                         FROM relationship_student_iom as rsi
+                                         INNER JOIN a_iom as iom ON rsi.iom_id = iom.iom_id
+                                         INNER JOIN students as s ON rsi.user_id = s.user_id
+                                         INNER JOIN area ON s.area_id = area.id_area
+                                         INNER JOIN schools as school ON s.school_id = school.id_school
+                                         WHERE rsi.tutor_id = "${tutorId}"
+                                         AND rsi.status = 1`
+        }
+
+        let [students] = await req.db.execute(studentsSql)
+
+        if(!students) {
+            response.status(201, [], res)
+        }else {
+            response.status(200, students,res)
+        }
+
+    }catch (e) {
+
+    }
+}
+
+/**
+ * получить студентов заврешивх обучение по id ИОМа
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
+exports.getStudentsForTutorByIomId = async(req,res) => {
+    try {
+        const {token, iomId} = req.body
+        const tutor = await userId(req.db,token)
+        const tutorId = tutor[0]['user_id'];
+
+        let studentsSql = `SELECT rsi.iom_id, DATE_FORMAT(rsi.date_finished_education, '%d.%m.%Y') as end_education,
+                                         DATE_FORMAT(rsi.created_at, '%d.%m.%Y') as start_education,
+                                         rsi.dump_link,
+                                         iom.title,s.user_id, s.name, s.surname, s.patronymic,
+                                         school.school_name,area.title_area
+                                         FROM relationship_student_iom as rsi
+                                         INNER JOIN a_iom as iom ON rsi.iom_id = iom.iom_id
+                                         INNER JOIN students as s ON rsi.user_id = s.user_id
+                                         INNER JOIN area ON s.area_id = area.id_area 
+                                         INNER JOIN schools as school ON s.school_id = school.id_school
+                                         WHERE rsi.tutor_id = "${tutorId}" AND rsi.iom_id = "${iomId}"
+                                         AND rsi.status = 1`
+
+
+        let [students] = await req.db.execute(studentsSql)
+
+
+        if(!students) {
+            response.status(201, [], res)
+        }else {
+            response.status(200, students,res)
+        }
+
+    }catch (e) {
+
+    }
+}
+
+/**
+ * Отправить статус о готовности к заврешению
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
+
+exports.setStatusFinishedIom = async(req,res) => {
+    try {
+        const {iomId, token} = req.body
+        const tutor = await userId(req.db, token)
+        const tutor_id = tutor[0]['user_id']
+
+        // TODO дописать проверку на готовность
+
+        const sql0 = `SELECT id FROM permission_to_finished_education WHERE  tutor_id = "${tutor_id}" 
+                     `
+        let [check] = await req.db.execute(sql0)
+
+        if(check.length) {
+            response.status(201, {message:'Статус уже был отправлен ранее!'}, res)
+        }else {
+            const sql0 = `SELECT group_id FROM groups_relationship WHERE tutor_id = "${tutor_id}" LIMIT 1 `
+            let [groupData] = await req.db.execute(sql0)
+
+            const sql = `INSERT INTO permission_to_finished_education (tutor_id, iom_id, group_id, status)
+                     VALUES("${tutor_id}", "${iomId}", ${groupData[0]['group_id']}, 1)`
+
+            let [result] = await req.db.execute(sql)
+
+            if(!result.insertId) {
+                response.status(201, {message:'Ошибка при выполнении операции. Обратитесь к разработчикам'}, res)
+            }else {
+                response.status(200, {message:'Статус о готовности закрыть учебную группу отправлен!'},res)
+            }
+        }
+    }catch (e) {
+        console.log(e.message)
     }
 }
 
