@@ -5,7 +5,7 @@ uploads
 #.dbenv.js
 /settings/db.js
 /uploads/
-/settings
+#/settings
 
 
 # local env files
