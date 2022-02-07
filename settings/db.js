@@ -5,7 +5,7 @@ const env = require('./../dbenv')
 class DB {
     static connect() {
         return mysql.createConnection({
-            //
+
             host: "localhost",
             user: "root",
             password: "1234567890",

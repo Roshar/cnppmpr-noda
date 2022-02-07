@@ -182,6 +182,8 @@ exports.getLastUsers = async (req, res) => {
 
 exports.getUsersActive = async (req, res) => {
     try {
+        let date = new Date();
+        console.log(date.getTime())
         const tblName = req.body.tbl
         let sql
         if(tblName === 'students') {
@@ -213,6 +215,8 @@ exports.getUsersActive = async (req, res) => {
         }
 
         let [sqlData] = await req.db.execute(sql)
+        let date2 = new Date();
+        console.log(date2.getTime())
 
         if(!sqlData.length) {
             response.status(201, {},res)
@@ -1211,7 +1215,6 @@ exports.getIomByTutorId =  async(req,res) => {
 
 exports.getFinishedStudentsCountByTutor =  async(req,res) => {
     try {
-        console.log('dfdf')
         const tutorId = req.body.tutorId
         let sql = `SELECT COUNT(id) as id FROM relationship_student_iom  WHERE tutor_id = "${tutorId}" AND status = 1 `
         const [sqlData] = await req.db.execute(sql)
