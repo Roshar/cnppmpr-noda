@@ -961,14 +961,14 @@ exports.sendCommentsForTask = async(req, res) => {
 exports.insertInReportWithoutFile = async(req, res) => {
     try {
 
-        const iomId = req.body.iomId
-        const taskId = req.body.taskId
-        const token = req.body.token
-        const link = req.body.link ? req.body.link.trim() : ''
-        // const content = req.body.content.trim().replace(/<[^>]*>?/gm, '');
-        const content = req.body.content.trim();
-        const category = req.body.category
-
+        const {link = '', content = '', iomId, taskId, category, token, files=null} = req.body
+        // const iomId = req.body.iomId
+        // const taskId = req.body.taskId
+        // const token = req.body.token
+        // const link = req.body.link ? req.body.link.trim() : ''
+        // // const content = req.body.content.trim().replace(/<[^>]*>?/gm, '');
+        // const content = req.body.content.trim();
+        // const category = req.body.category
         const id = await userId(req.db,token)
         const studentId = id[0]['user_id']
         const accessSQl = `SELECT tutor_id FROM relationship_student_iom WHERE user_id = "${studentId}"  AND iom_id = "${iomId}"`

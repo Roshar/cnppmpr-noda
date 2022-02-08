@@ -619,12 +619,17 @@ exports.getStudentAnswer = async(req, res) => {
  */
 exports.successTask = async(req, res) => {
     try {
+
+        // const dd = new Date()
+        // console.log(dd.getTime())
+
         const {token, iomId, exId, studentId} = req.body
         const id = await userId(req.db,token)
         const tutorId = id[0]['user_id']
 
-        const sql = `UPDATE  a_report SET accepted = 1, on_check = 0, tutor_comment = '' WHERE iom_id="${iomId}" AND exercises_id = ${exId} 
-                     AND student_id = "${studentId}"`
+        const sql = `UPDATE  a_report SET accepted = 1, on_check = 0, 
+                             tutor_comment = '' WHERE iom_id="${iomId}" AND exercises_id = ${exId} 
+                             AND student_id = "${studentId}"`
 
         const sql2 = `SELECT iom.title as iom_title, ex.iom_id, ex.title as ex_title,  ex.description as ex_description, 
                              ex.link as ex_link, ex.mentor, DATE_FORMAT(ex.term, '%Y-%m-%d') as term, 
@@ -643,12 +648,13 @@ exports.successTask = async(req, res) => {
 
         if(result2 && result2.length) {
             let r = result2[0]
+            console.log(result2[0])
             const sql3 = `INSERT INTO global_history_reports 
                                      (iom_title,iom_id,exercise_title,exercise_description,
                                      exercise_link,mentor_id,term,tag_id,iom_level_id,
                                      tutor_id,student_id,answer_text,answer_link,file_path) 
                                      VALUES ("${r['iom_title']}","${r['iom_id']}","${r['ex_title']}",
-                                             "${r['ex_description']}","${r['ex_link']}",${r['mentor']},
+                                             "${r['ex_description']}", "${r['ex_link']}",${r['mentor']},
                                              "${r['term']}", ${r['tag_id']}, ${r['iom_level_id']},"${tutorId}",
                                              "${studentId}","${r['an_content']}","${r['an_link']}","${r['file_path']}")`
             const [result3] = await req.db.execute(sql3)
@@ -662,9 +668,11 @@ exports.successTask = async(req, res) => {
         }else {
             response.status(201, {message:"Ошибка при одобрении. Обратиетсь к разработчикам"},res)
         }
+        // const dd2 = new Date()
+        // console.log(dd2.getTime())
 
     }catch (e) {
-        console.log(e)
+        console.log(e.message)
     }
 }
 

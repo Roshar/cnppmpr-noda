@@ -182,8 +182,7 @@ exports.getLastUsers = async (req, res) => {
 
 exports.getUsersActive = async (req, res) => {
     try {
-        let date = new Date();
-        console.log(date.getTime())
+
         const tblName = req.body.tbl
         let sql
         if(tblName === 'students') {
@@ -215,8 +214,7 @@ exports.getUsersActive = async (req, res) => {
         }
 
         let [sqlData] = await req.db.execute(sql)
-        let date2 = new Date();
-        console.log(date2.getTime())
+
 
         if(!sqlData.length) {
             response.status(201, {},res)
