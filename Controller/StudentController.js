@@ -975,7 +975,6 @@ exports.insertInReportWithoutFile = async(req, res) => {
         let [access] = await req.db.execute(accessSQl)
 
         if(access.length) {
-
             const checkIssetReport = `SELECT id FROM a_report WHERE exercises_id =${taskId} AND iom_id = "${iomId}" AND student_id = "${studentId}"`
             let [checkData] = await req.db.execute(checkIssetReport)
             if(!checkData.length) {

@@ -182,7 +182,6 @@ exports.getLastUsers = async (req, res) => {
 
 exports.getUsersActive = async (req, res) => {
     try {
-
         const tblName = req.body.tbl
         let sql
         if(tblName === 'students') {

@@ -76,13 +76,20 @@ exports.getLibraryData  = async(req, res) => {
 //     }
 // }
 
+
+/**
+ * добавить задание в бибилиотеку тьютора
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
+
 exports.addExercise = async(req, res) => {
     try {
         const id = await userId(req.db,req.body.token)
-        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
+        const tutor_id = id[0]['user_id'];
         let {title, description='', link='', category, level } = req.body.values
 
-        const sql = `INSERT INTO ${tblCollection.library} (user_id, title,link, description,tag_id, iom_level_id) VALUES ("${id[0]['user_id']}","${title}","${link}","${description}",${category},${level})`
+        const sql = `INSERT INTO a_library (tutor_id, title,link, description, tag_id, iom_level_id) 
+                     VALUES ("${tutor_id}","${title}","${link}","${description}",${category},${level})`
         let [result] = await req.db.execute(sql)
 
         if(!result.insertId) {
@@ -95,16 +102,20 @@ exports.addExercise = async(req, res) => {
     }
 }
 
+/**
+ * получить задание из библиотеки по id и tutor_id
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
 exports.getTask = async(req, res) => {
     try {
 
         const id = await userId(req.db,req.body.token)
-        const tblCollection = tblMethod.tbleCollection(id[0]['user_id'])
         const taskId = req.body.id
-        const tbl = tblCollection.library
+        const tutorId = id[0]['user_id'];
+
         let taskSql = `SELECT
                             t.id,
-                            t.user_id,
+                            t.tutor_id,
                             t.title,
                             t.link,
                             t.description,
@@ -112,10 +123,10 @@ exports.getTask = async(req, res) => {
                             tag.title_tag,
                             level.title as level_title, 
                             level.id as level_id,
-                            t.tag_id FROM ${tbl} as t 
+                            t.tag_id FROM a_library as t 
                             INNER JOIN tag ON t.tag_id = tag.id_tag
                             INNER JOIN global_iom_levels as level ON t.iom_level_id = level.id 
-                            WHERE t.id = ${taskId}`
+                            WHERE t.id = ${taskId} AND t.tutor_id = "${tutorId}"`
         let [taskData] = await req.db.execute(taskSql)
 
         if(!taskData.length) {
@@ -126,18 +137,22 @@ exports.getTask = async(req, res) => {
             return true
         }
     }catch (e) {
+        console.log(e.message)
         return e
     }
 }
-
+/**
+ * обновить задание по id и tutor_id
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
 exports.update = async(req, res) => {
     try {
         const idU = await userId(req.db,req.body.token)
-        const tblCollection = tblMethod.tbleCollection(idU[0]['user_id'])
+        const tutorId = idU[0]['user_id'];
         const {id, title, description = '', link = '', level,  tag} = req.body.values
-        const tblName = tblCollection.library
 
-        const sql = `UPDATE  ${tblName} SET title ="${title}" , description = "${description}", link="${link}", tag_id=${tag}, iom_level_id=${level} WHERE id="${id}"`
+        const sql = `UPDATE  a_library SET title ="${title}" , description = "${description}", link="${link}", 
+                     tag_id=${tag}, iom_level_id=${level} WHERE id="${id}" AND tutor_id = "${tutorId}"`
         let [result] = await req.db.execute(sql)
         if(!result.affectedRows) {
             response.status(400, {message:"Ошибка при обновлении"},res)
@@ -150,17 +165,21 @@ exports.update = async(req, res) => {
     }
 }
 
+/**
+ * удалить задание по id и tutor_id
+ * ПРОФИЛЬ ТЬЮТОРА
+ */
+
 exports.deleteTask = async(req, res) => {
     const idU = await userId(req.db,req.body.token)
-    const tblCollection = tblMethod.tbleCollection(idU[0]['user_id'])
+    const tutor_id = idU[0]['user_id']
     const id = req.body.id
-    const deleteTaskSql = `DELETE FROM ${tblCollection.library} WHERE id = "${id}"`
-
+    const deleteTaskSql = `DELETE FROM a_library WHERE id = "${id}" AND tutor_id = "${tutor_id}"`
     const [deleteResult] = await req.db.execute(deleteTaskSql)
 
     if(!deleteResult.affectedRows) {
-        response.status(200,{message:'Ошибка при удалении'},res)
+        response.status(201,{message:'Ошибка при удалении'},res)
     }else {
-        response.status(201, {message:'Задание удалено!'},res)
+        response.status(200, {message:'Задание удалено!'},res)
     }
 }

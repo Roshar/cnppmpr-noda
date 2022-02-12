@@ -648,7 +648,7 @@ exports.successTask = async(req, res) => {
 
         if(result2 && result2.length) {
             let r = result2[0]
-            console.log(result2[0])
+            // console.log(result2[0])
             const sql3 = `INSERT INTO global_history_reports 
                                      (iom_title,iom_id,exercise_title,exercise_description,
                                      exercise_link,mentor_id,term,tag_id,iom_level_id,
