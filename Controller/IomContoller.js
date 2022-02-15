@@ -2,6 +2,7 @@
 const response = require('./../response')
 const uniqid = require('uniqid');
 const userId = require('./../use/getUserId')
+const mysqlEscape = require('./../use/mysqlEscape')
 const fs = require ('fs');
 
 /**
@@ -199,7 +200,7 @@ exports.addExerciseFromLib = async(req, res) => {
             response.status(400, {message:"Ошибка при добавлении элемента"},res)
         }
         const insertLibDataInIom = `INSERT INTO a_exercise (iom_id, title, description, link, mentor, term, tag_id, iom_level_id, created_at, tutor_id)
-                                    VALUES ("${iomId}","${libData[0].title}","${libData[0].description}","${libData[0].link}",${libData[0].mentor},"${libData[0].term}",
+                                    VALUES ("${iomId}","${mysqlEscape(libData[0].title)}","${libData[0].description}","${libData[0].link}",${libData[0].mentor},"${libData[0].term}",
                                     "${libData[0]['tag_id']}",${libData[0]['iom_level_id']}, now(), "${tutorId}")`
         const [result] = await req.db.execute(insertLibDataInIom)
 
@@ -209,7 +210,7 @@ exports.addExerciseFromLib = async(req, res) => {
             response.status(200,{message:"Задание успешно добавлено", result},res)
         }
     }catch (e) {
-
+        console.log(e.message)
     }
 }
 
@@ -235,7 +236,7 @@ exports.addExerciseFromLibGlobal = async(req, res) => {
             response.status(400, {message:"Ошибка при добавлении элемента"},res)
         }
         const insertLibDataInIom = `INSERT INTO a_exercise (iom_id, title, description, link, mentor, term, tag_id, iom_level_id, created_at, tutor_id)
-                                    VALUES ("${iomId}","${libData[0].title}","${libData[0].description}","${libData[0].link}",${libData[0].mentor},"${libData[0].term}",
+                                    VALUES ("${iomId}","${mysqlEscape(libData[0].title)}","${libData[0].description}","${libData[0].link}",${libData[0].mentor},"${libData[0].term}",
                                     ${libData[0]['tag_id']},
                                     ${libData[0]['iom_level_id']}, now(), "${tutorId}" )`
         const [result] = await req.db.execute(insertLibDataInIom)
