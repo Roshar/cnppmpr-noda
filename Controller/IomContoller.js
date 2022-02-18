@@ -620,7 +620,6 @@ exports.getStudentAnswer = async(req, res) => {
  */
 exports.successTask = async(req, res) => {
     try {
-
         // const dd = new Date()
         // console.log(dd.getTime())
 
@@ -654,7 +653,7 @@ exports.successTask = async(req, res) => {
                                      (iom_title,iom_id,exercise_title,exercise_description,
                                      exercise_link,mentor_id,term,tag_id,iom_level_id,
                                      tutor_id,student_id,answer_text,answer_link,file_path) 
-                                     VALUES ("${r['iom_title']}","${r['iom_id']}","${r['ex_title']}",
+                                     VALUES ("${r['iom_title']}","${r['iom_id']}","${mysqlEscape(r['ex_title'])}",
                                              "${r['ex_description']}", "${r['ex_link']}",${r['mentor']},
                                              "${r['term']}", ${r['tag_id']}, ${r['iom_level_id']},"${tutorId}",
                                              "${studentId}","${r['an_content']}","${r['an_link']}","${r['file_path']}")`
