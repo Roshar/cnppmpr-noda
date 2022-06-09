@@ -80,7 +80,7 @@ exports.getDataFromIOM = async(req,res) => {
 /**
  * получить задание (мероприятие)
  * профиль АДМИН
- */
+ */   
 
 exports.getTask = async(req,res) => {
     try {
@@ -1015,13 +1015,15 @@ exports.deactivationById = async(req,res) => {
 
 exports.createGroup = async(req, res) => {
     try {
+        console.log(req.body)
         const tutorId = req.body.tutor
         const title = req.body.title
         const description = req.body.description
-        const insertSqlG = `INSERT INTO groups_ (title, description) VALUES ("${title}", "${description}")`
+        const insertSqlG = `INSERT INTO groups_ (title, description, status) VALUES ("${title}", "${description}", 0)`
         let insertSqlGR;
 
         const [result] = await req.db.execute(insertSqlG)
+        console.log(result)
 
         if(result.insertId) {
             insertSqlGR = `INSERT INTO groups_relationship (group_id, tutor_id) VALUES (${result.insertId}, "${tutorId}")`
