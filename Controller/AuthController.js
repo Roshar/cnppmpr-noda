@@ -62,7 +62,7 @@ exports.signup = async (req, res) => {
 
 exports.singin = async (req, res) => {
     try {
-
+        // console.log(req.body)
         const {login, password} = req.body
         const sql = `select id, id_user, login, password, role, status from users where login = "${login}"`;
         const [rows] = await req.db.execute(sql)
