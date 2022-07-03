@@ -1,23 +1,23 @@
 
-// module.exports = {
-//     HOST:"localhost",
-//     SOCKET: '/Applications/MAMP/tmp/mysql/mysql.sock',
-//     PORT: 8899,
-//     DB_USER: 'root',
-//     DB_PASSWORD: 'root',
-//     DB_NAME: 'crm_2',
-//     jwt: 'bearer'
-// }
-
 module.exports = {
     HOST:"localhost",
-    // SOCKET: '/Applications/MAMP/tmp/mysql/mysql.sock',
-    // PORT: 8899,
+    SOCKET: '/Applications/MAMP/tmp/mysql/mysql.sock',
+    PORT: 8899,
     DB_USER: 'root',
-    DB_PASSWORD: '1234567890',
-    DB_NAME: 'cnppm',
+    DB_PASSWORD: 'root',
+    DB_NAME: 'crm_2',
     jwt: 'bearer'
 }
+
+// module.exports = {
+//     HOST:"localhost",
+//     // SOCKET: '/Applications/MAMP/tmp/mysql/mysql.sock',
+//     // PORT: 8899,
+//     DB_USER: 'root',
+//     DB_PASSWORD: '1234567890',
+//     DB_NAME: 'cnppm',
+//     jwt: 'bearer'
+// }
 
 // module.exports = {
 //     HOST:"localhost",
